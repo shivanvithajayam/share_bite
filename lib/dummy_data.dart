@@ -1,6 +1,6 @@
 import 'models/donation_model.dart';
 import 'models/user_model.dart';
-imageUrl: 'https://images.unsplash.com/photo-1604908176997-125f25cc6f3d',
+
 class DummyData {
   static final UserModel dummyDonor = UserModel(
     uid: 'donor_001',
@@ -40,6 +40,7 @@ class DummyData {
       longitude: 77.6245,
       status: 'pending',
       createdAt: DateTime.now().subtract(const Duration(minutes: 10)),
+      imageUrl: 'https://images.unsplash.com/photo-1604908176997-125f25cc6f3d',
     ),
     DonationModel(
       id: 'don_002xyz',
@@ -55,6 +56,7 @@ class DummyData {
       longitude: 77.6389,
       status: 'pending',
       createdAt: DateTime.now().subtract(const Duration(minutes: 25)),
+      imageUrl: 'https://images.unsplash.com/photo-1589302168068-964664d93dc0',
     ),
   ];
 
