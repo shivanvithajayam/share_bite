@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../services/auth_service.dart';
 import '../../utils/app_theme.dart';
+import '../../dummy_data.dart';
 import 'signup_screen.dart';
 import '../donor/donor_home_screen.dart';
 import '../ngo/ngo_home_screen.dart';
@@ -19,7 +19,6 @@ class _LoginScreenState extends State<LoginScreen>
   final _passCtrl = TextEditingController();
   bool _obscure = true;
   bool _loading = false;
-  final _auth = AuthService();
 
   @override
   void initState() {
@@ -41,28 +40,25 @@ class _LoginScreenState extends State<LoginScreen>
       return;
     }
     setState(() => _loading = true);
-    try {
-      final user = await _auth.signIn(_emailCtrl.text, _passCtrl.text);
-      if (!mounted) return;
-      if (user == null) {
-        _snack('User not found');
-        return;
-      }
-      if (user.role == 'donor') {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => DonorHomeScreen(user: user)),
-        );
-      } else {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => NgoHomeScreen(user: user)),
-        );
-      }
-    } catch (e) {
-      _snack(e.toString());
-    } finally {
-      if (mounted) setState(() => _loading = false);
+    await Future.delayed(const Duration(milliseconds: 800));
+    if (!mounted) return;
+    setState(() => _loading = false);
+
+    final isDonor = _tabController.index == 0;
+    if (isDonor) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => DonorHomeScreen(user: DummyData.dummyDonor),
+        ),
+      );
+    } else {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => NgoHomeScreen(user: DummyData.dummyNgo),
+        ),
+      );
     }
   }
 
@@ -80,7 +76,7 @@ class _LoginScreenState extends State<LoginScreen>
       backgroundColor: AppColors.cream,
       body: Column(
         children: [
-          // ── Header ─────────────────────────────────────────────────────────
+          // ── Header ──────────────────────────────────────────────────────
           AnimatedContainer(
             duration: const Duration(milliseconds: 300),
             color: headerColor,
@@ -140,7 +136,7 @@ class _LoginScreenState extends State<LoginScreen>
             ),
           ),
 
-          // ── Form ───────────────────────────────────────────────────────────
+          // ── Form ────────────────────────────────────────────────────────
           Expanded(
             child: Container(
               decoration: const BoxDecoration(
@@ -222,17 +218,11 @@ class _LoginScreenState extends State<LoginScreen>
                         onPressed: () => setState(() => _obscure = !_obscure),
                       ),
                     ),
+
                     Align(
                       alignment: Alignment.centerRight,
                       child: TextButton(
-                        onPressed: () {
-                          if (_emailCtrl.text.isNotEmpty) {
-                            _auth.sendPasswordReset(_emailCtrl.text);
-                            _snack('Password reset email sent');
-                          } else {
-                            _snack('Enter your email first');
-                          }
-                        },
+                        onPressed: () => _snack('Password reset email sent'),
                         child: Text(
                           'Forgot password?',
                           style: TextStyle(color: btnColor, fontSize: 12),
@@ -241,6 +231,7 @@ class _LoginScreenState extends State<LoginScreen>
                     ),
 
                     const SizedBox(height: 8),
+
                     // Login button
                     SizedBox(
                       width: double.infinity,

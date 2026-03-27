@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../services/auth_service.dart';
 import '../../utils/app_theme.dart';
+import '../../dummy_data.dart';
 import '../donor/donor_home_screen.dart';
 import '../ngo/ngo_home_screen.dart';
 
@@ -20,7 +20,16 @@ class _SignupScreenState extends State<SignupScreen> {
   String _role = 'donor';
   bool _obscure = true;
   bool _loading = false;
-  final _auth = AuthService();
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _emailCtrl.dispose();
+    _passCtrl.dispose();
+    _phoneCtrl.dispose();
+    _ngoRegCtrl.dispose();
+    super.dispose();
+  }
 
   Future<void> _signup() async {
     if (_nameCtrl.text.isEmpty ||
@@ -35,49 +44,31 @@ class _SignupScreenState extends State<SignupScreen> {
       return;
     }
     setState(() => _loading = true);
-    try {
-      final user = await _auth.signUp(
-        name: _nameCtrl.text,
-        email: _emailCtrl.text,
-        password: _passCtrl.text,
-        phone: _phoneCtrl.text,
-        role: _role,
-        ngoRegId: _role == 'ngo' ? _ngoRegCtrl.text : null,
+    await Future.delayed(const Duration(milliseconds: 800));
+    if (!mounted) return;
+    setState(() => _loading = false);
+
+    if (_role == 'donor') {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+          builder: (_) => DonorHomeScreen(user: DummyData.dummyDonor),
+        ),
+        (_) => false,
       );
-      if (!mounted) return;
-      if (user == null) return;
-      if (user.role == 'donor') {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (_) => DonorHomeScreen(user: user)),
-          (_) => false,
-        );
-      } else {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (_) => NgoHomeScreen(user: user)),
-          (_) => false,
-        );
-      }
-    } catch (e) {
-      _snack(e.toString());
-    } finally {
-      if (mounted) setState(() => _loading = false);
+    } else {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+          builder: (_) => NgoHomeScreen(user: DummyData.dummyNgo),
+        ),
+        (_) => false,
+      );
     }
   }
 
   void _snack(String msg) =>
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
-
-  @override
-  void dispose() {
-    _nameCtrl.dispose();
-    _emailCtrl.dispose();
-    _passCtrl.dispose();
-    _phoneCtrl.dispose();
-    _ngoRegCtrl.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -89,7 +80,7 @@ class _SignupScreenState extends State<SignupScreen> {
       backgroundColor: AppColors.cream,
       body: Column(
         children: [
-          // Header
+          // ── Header ────────────────────────────────────────────────────────
           Container(
             color: accentColor,
             padding: EdgeInsets.only(
@@ -121,6 +112,7 @@ class _SignupScreenState extends State<SignupScreen> {
             ),
           ),
 
+          // ── Form ──────────────────────────────────────────────────────────
           Expanded(
             child: Container(
               decoration: const BoxDecoration(
@@ -131,6 +123,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 padding: const EdgeInsets.all(24),
                 child: Column(
                   children: [
+                    // Pill handle
                     Container(
                       width: 40,
                       height: 4,
@@ -214,6 +207,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     ],
 
                     const SizedBox(height: 28),
+
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
@@ -237,6 +231,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       ),
                     ),
                     const SizedBox(height: 20),
+
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [

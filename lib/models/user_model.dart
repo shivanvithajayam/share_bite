@@ -3,7 +3,7 @@ class UserModel {
   final String name;
   final String email;
   final String phone;
-  final String role; // 'donor' or 'ngo'
+  final String role;
   final String? address;
   final double? latitude;
   final double? longitude;
@@ -20,30 +20,4 @@ class UserModel {
     this.longitude,
     this.ngoRegId,
   });
-
-  factory UserModel.fromMap(Map<String, dynamic> map, String uid) {
-    return UserModel(
-      uid: uid,
-      name: map['name'] ?? '',
-      email: map['email'] ?? '',
-      phone: map['phone'] ?? '',
-      role: map['role'] ?? 'donor',
-      address: map['address'],
-      latitude: map['latitude']?.toDouble(),
-      longitude: map['longitude']?.toDouble(),
-      ngoRegId: map['ngoRegId'],
-    );
-  }
-
-  Map<String, dynamic> toMap() => {
-    'uid': uid,
-    'name': name,
-    'email': email,
-    'phone': phone,
-    'role': role,
-    'address': address,
-    'latitude': latitude,
-    'longitude': longitude,
-    'ngoRegId': ngoRegId,
-  };
 }

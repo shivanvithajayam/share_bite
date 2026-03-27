@@ -1,0 +1,108 @@
+import 'models/donation_model.dart';
+import 'models/user_model.dart';
+imageUrl: 'https://images.unsplash.com/photo-1604908176997-125f25cc6f3d',
+class DummyData {
+  static final UserModel dummyDonor = UserModel(
+    uid: 'donor_001',
+    name: 'Arjun Mehta',
+    email: 'arjun@email.com',
+    phone: '+91 98765 43210',
+    role: 'donor',
+    address: 'Koramangala, Bengaluru',
+    latitude: 12.9352,
+    longitude: 77.6245,
+  );
+
+  static final UserModel dummyNgo = UserModel(
+    uid: 'ngo_001',
+    name: 'Asha Foundation',
+    email: 'asha@ngo.org',
+    phone: '+91 91234 56789',
+    role: 'ngo',
+    ngoRegId: 'NGO-2024-00123',
+    address: 'Indiranagar, Bengaluru',
+    latitude: 12.9716,
+    longitude: 77.6412,
+  );
+
+  static final List<DonationModel> activeDonations = [
+    DonationModel(
+      id: 'don_001abc',
+      donorId: 'donor_001',
+      donorName: 'Arjun Mehta',
+      donorPhone: '+91 98765 43210',
+      foodName: 'Biryani',
+      quantity: '15 plates',
+      description: 'Freshly cooked chicken biryani with raita',
+      expiryTime: DateTime.now().add(const Duration(hours: 3)),
+      address: 'Koramangala, Bengaluru',
+      latitude: 12.9352,
+      longitude: 77.6245,
+      status: 'pending',
+      createdAt: DateTime.now().subtract(const Duration(minutes: 10)),
+    ),
+    DonationModel(
+      id: 'don_002xyz',
+      donorId: 'donor_001',
+      donorName: 'Arjun Mehta',
+      donorPhone: '+91 98765 43210',
+      foodName: 'Chapati & Dal',
+      quantity: '20 servings',
+      description: 'Homemade chapati with yellow dal',
+      expiryTime: DateTime.now().add(const Duration(hours: 2)),
+      address: 'HSR Layout, Bengaluru',
+      latitude: 12.9116,
+      longitude: 77.6389,
+      status: 'pending',
+      createdAt: DateTime.now().subtract(const Duration(minutes: 25)),
+    ),
+  ];
+
+  static final List<DonationModel> pendingDonations = [
+    DonationModel(
+      id: 'ngo_don_001',
+      donorId: 'donor_002',
+      donorName: 'Priya Sharma',
+      donorPhone: '+91 87654 32109',
+      foodName: 'Pulao & Raita',
+      quantity: '10 plates',
+      description: 'Vegetable pulao with boondi raita',
+      expiryTime: DateTime.now().add(const Duration(hours: 4)),
+      address: 'Jayanagar, Bengaluru',
+      latitude: 12.9250,
+      longitude: 77.5938,
+      status: 'pending',
+      createdAt: DateTime.now().subtract(const Duration(minutes: 5)),
+    ),
+    DonationModel(
+      id: 'ngo_don_002',
+      donorId: 'donor_003',
+      donorName: 'Rahul Verma',
+      donorPhone: '+91 76543 21098',
+      foodName: 'Sambar Rice',
+      quantity: '25 servings',
+      description: 'South Indian sambar rice with papad',
+      expiryTime: DateTime.now().add(const Duration(hours: 2, minutes: 30)),
+      address: 'BTM Layout, Bengaluru',
+      latitude: 12.9166,
+      longitude: 77.6101,
+      status: 'pending',
+      createdAt: DateTime.now().subtract(const Duration(minutes: 18)),
+    ),
+    DonationModel(
+      id: 'ngo_don_003',
+      donorId: 'donor_004',
+      donorName: 'Sneha Iyer',
+      donorPhone: '+91 65432 10987',
+      foodName: 'Idli & Chutney',
+      quantity: '30 pieces',
+      description: 'Fresh steamed idlis with coconut chutney',
+      expiryTime: DateTime.now().add(const Duration(hours: 1, minutes: 45)),
+      address: 'Marathahalli, Bengaluru',
+      latitude: 12.9591,
+      longitude: 77.6972,
+      status: 'pending',
+      createdAt: DateTime.now().subtract(const Duration(minutes: 40)),
+    ),
+  ];
+}
