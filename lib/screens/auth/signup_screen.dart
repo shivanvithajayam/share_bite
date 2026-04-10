@@ -1,6 +1,7 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../../utils/app_theme.dart';
-import '../../dummy_data.dart';
 import '../donor/donor_home_screen.dart';
 import '../ngo/ngo_home_screen.dart';
 
@@ -39,31 +40,53 @@ class _SignupScreenState extends State<SignupScreen> {
       _snack('Please fill all fields');
       return;
     }
+
     if (_passCtrl.text.length < 6) {
       _snack('Password must be at least 6 characters');
       return;
     }
-    setState(() => _loading = true);
-    await Future.delayed(const Duration(milliseconds: 800));
-    if (!mounted) return;
-    setState(() => _loading = false);
 
-    if (_role == 'donor') {
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(
-          builder: (_) => DonorHomeScreen(user: DummyData.dummyDonor),
-        ),
-        (_) => false,
-      );
-    } else {
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(
-          builder: (_) => NgoHomeScreen(user: DummyData.dummyNgo),
-        ),
-        (_) => false,
-      );
+    try {
+      setState(() => _loading = true);
+
+      // Create account in Firebase Authentication
+      UserCredential userCredential = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(
+            email: _emailCtrl.text.trim(),
+            password: _passCtrl.text.trim(),
+          );
+
+      String uid = userCredential.user!.uid;
+
+      // Store extra data in Firestore
+      await FirebaseFirestore.instance.collection('users').doc(uid).set({
+        "name": _nameCtrl.text.trim(),
+        "email": _emailCtrl.text.trim(),
+        "phone": _phoneCtrl.text.trim(),
+        "role": _role,
+        "ngoRegId": _ngoRegCtrl.text.trim(),
+        "createdAt": Timestamp.now(),
+      });
+
+      setState(() => _loading = false);
+
+      // Navigate based on role
+      if (_role == "donor") {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const DonorHomeScreen()),
+          (_) => false,
+        );
+      } else {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const NgoHomeScreen()),
+          (_) => false,
+        );
+      }
+    } catch (e) {
+      setState(() => _loading = false);
+      _snack(e.toString());
     }
   }
 

@@ -1,6 +1,7 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../../utils/app_theme.dart';
-import '../../dummy_data.dart';
 import 'signup_screen.dart';
 import '../donor/donor_home_screen.dart';
 import '../ngo/ngo_home_screen.dart';
@@ -39,26 +40,58 @@ class _LoginScreenState extends State<LoginScreen>
       _snack('Please fill all fields');
       return;
     }
-    setState(() => _loading = true);
-    await Future.delayed(const Duration(milliseconds: 800));
-    if (!mounted) return;
-    setState(() => _loading = false);
 
-    final isDonor = _tabController.index == 0;
-    if (isDonor) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => DonorHomeScreen(user: DummyData.dummyDonor),
-        ),
-      );
-    } else {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => NgoHomeScreen(user: DummyData.dummyNgo),
-        ),
-      );
+    try {
+      setState(() => _loading = true);
+
+      // Login with Firebase Authentication
+      UserCredential userCredential = await FirebaseAuth.instance
+          .signInWithEmailAndPassword(
+            email: _emailCtrl.text.trim(),
+            password: _passCtrl.text.trim(),
+          );
+
+      String uid = userCredential.user!.uid;
+
+      // Get user role from Firestore
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .get();
+
+      String role = userDoc['role'];
+
+      bool isDonorTab = _tabController.index == 0;
+      bool isNgoTab = _tabController.index == 1;
+
+      setState(() => _loading = false);
+
+      if (isDonorTab && role != "donor") {
+        await FirebaseAuth.instance.signOut();
+        _snack("This account is not registered as a donor.");
+        return;
+      }
+
+      if (isNgoTab && role != "ngo") {
+        await FirebaseAuth.instance.signOut();
+        _snack("This account is not registered as an NGO.");
+        return;
+      }
+
+      if (role == "donor") {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const DonorHomeScreen()),
+        );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const NgoHomeScreen()),
+        );
+      }
+    } catch (e) {
+      setState(() => _loading = false);
+      _snack("Login failed. Check email or password.");
     }
   }
 

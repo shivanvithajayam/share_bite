@@ -1,19 +1,15 @@
 import 'package:flutter/material.dart';
-import '../../models/user_model.dart';
 import '../../models/donation_model.dart';
 import '../../utils/app_theme.dart';
 import '../../dummy_data.dart';
 import '../auth/login_screen.dart';
 
 class DonorHomeScreen extends StatelessWidget {
-  final UserModel user;
-  const DonorHomeScreen({super.key, required this.user});
+  const DonorHomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final donations = DummyData.activeDonations
-        .where((d) => d.donorId == user.uid)
-        .toList();
+    final donations = DummyData.activeDonations.toList();
 
     return Scaffold(
       backgroundColor: AppColors.cream,
@@ -32,7 +28,7 @@ class DonorHomeScreen extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     Text(
-                      'Hi, ${user.name.split(' ').first} 👋',
+                      'Hi, Donor👋',
                       style: const TextStyle(
                         color: Colors.white,
                         fontFamily: 'DM Serif Display',

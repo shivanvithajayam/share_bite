@@ -1,14 +1,12 @@
 import '../common/donation_detail_screen.dart';
 import 'package:flutter/material.dart';
-import '../../models/user_model.dart';
 import '../../models/donation_model.dart';
 import '../../utils/app_theme.dart';
 import '../../dummy_data.dart';
 import '../auth/login_screen.dart';
 
 class NgoHomeScreen extends StatefulWidget {
-  final UserModel user;
-  const NgoHomeScreen({super.key, required this.user});
+  const NgoHomeScreen({super.key});
 
   @override
   State<NgoHomeScreen> createState() => _NgoHomeScreenState();
@@ -62,7 +60,7 @@ class _NgoHomeScreenState extends State<NgoHomeScreen> {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     Text(
-                      '${widget.user.name} 🏠',
+                      'NGO Dashboard 🏠',
                       style: const TextStyle(
                         color: AppColors.roseDark,
                         fontFamily: 'DM Serif Display',

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "665799017824",
+    "project_id": "sharebite-mad-project",
+    "storage_bucket": "sharebite-mad-project.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:665799017824:android:e23e46c6b8bcb866abca05",
+        "android_client_info": {
+          "package_name": "com.example.share_bite"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC0aEOvhgblRIV-Y4ADlQxM2ufcFsmH-84"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
