@@ -18,6 +18,8 @@ class DonationModel {
   final String? acceptedByNgoId;
   final String? acceptedByNgoName;
   final String? acceptedByNgoPhone;
+  final String? ngoName;
+  final String? ngoPhone;
   final DateTime? acceptedAt;
 
   DonationModel({
@@ -38,6 +40,8 @@ class DonationModel {
     this.acceptedByNgoId,
     this.acceptedByNgoName,
     this.acceptedByNgoPhone,
+    this.ngoName,
+    this.ngoPhone,
     this.acceptedAt,
   });
 
@@ -63,6 +67,8 @@ class DonationModel {
       acceptedByNgoId: data['acceptedByNgoId'],
       acceptedByNgoName: data['acceptedByNgoName'],
       acceptedByNgoPhone: data['acceptedByNgoPhone'],
+      ngoName: data['ngoName'],
+      ngoPhone: data['ngoPhone'],
       acceptedAt: data['acceptedAt'] != null
           ? (data['acceptedAt'] as Timestamp).toDate()
           : null,
@@ -88,9 +94,7 @@ class DonationModel {
       'acceptedByNgoId': acceptedByNgoId,
       'acceptedByNgoName': acceptedByNgoName,
       'acceptedByNgoPhone': acceptedByNgoPhone,
-      'acceptedAt': acceptedAt != null
-          ? Timestamp.fromDate(acceptedAt!)
-          : null,
+      'acceptedAt': acceptedAt != null ? Timestamp.fromDate(acceptedAt!) : null,
     };
   }
 }

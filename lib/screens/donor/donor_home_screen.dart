@@ -168,9 +168,7 @@ class _DonorHomeScreenState extends State<DonorHomeScreen> {
                 if (filtered.isEmpty) {
                   return Center(
                     child: Text(
-                      showToday
-                          ? 'No donations today'
-                          : 'No past donations',
+                      showToday ? 'No donations today' : 'No past donations',
                     ),
                   );
                 }
@@ -181,8 +179,7 @@ class _DonorHomeScreenState extends State<DonorHomeScreen> {
                   itemCount: filtered.length,
                   itemBuilder: (ctx, i) {
                     return Padding(
-                      padding:
-                          const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
                       child: _DonationCard(donation: filtered[i]),
                     );
                   },
@@ -210,10 +207,9 @@ class _DonationCard extends StatelessWidget {
         border: Border.all(color: AppColors.sand),
       ),
       child: ExpansionTile(
-  key: PageStorageKey(donation.id), // ✅ IMPORTANT
-  tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        childrenPadding:
-            const EdgeInsets.fromLTRB(16, 0, 16, 12),
+        key: PageStorageKey(donation.id), // ✅ IMPORTANT
+        tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
 
         title: Row(
           children: [
@@ -224,8 +220,7 @@ class _DonationCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
                 color: AppColors.blush,
               ),
-              child: donation.imageUrl != null &&
-                      donation.imageUrl!.isNotEmpty
+              child: donation.imageUrl != null && donation.imageUrl!.isNotEmpty
                   ? ClipRRect(
                       borderRadius: BorderRadius.circular(12),
                       child: Image.network(
@@ -234,8 +229,7 @@ class _DonationCard extends StatelessWidget {
                       ),
                     )
                   : const Center(
-                      child: Text('🍱',
-                          style: TextStyle(fontSize: 24)),
+                      child: Text('🍱', style: TextStyle(fontSize: 24)),
                     ),
             ),
             const SizedBox(width: 14),
@@ -246,20 +240,15 @@ class _DonationCard extends StatelessWidget {
                 children: [
                   Text(
                     donation.foodName,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w600),
+                    style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
-                  Text(
-                    donation.quantity,
-                    style: const TextStyle(fontSize: 12),
-                  ),
+                  Text(donation.quantity, style: const TextStyle(fontSize: 12)),
                 ],
               ),
             ),
 
             Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 10, vertical: 5),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
                 color: AppColors.blush,
                 borderRadius: BorderRadius.circular(20),
@@ -267,8 +256,9 @@ class _DonationCard extends StatelessWidget {
               child: Text(
                 donation.status.toUpperCase(),
                 style: const TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600),
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ],
@@ -284,8 +274,11 @@ class _DonationCard extends StatelessWidget {
           _infoRow("⏰ Expiry", getExpiryText(donation.expiryTime)),
           _infoRow("📦 Status", donation.status),
 
-          if (donation.acceptedByNgoName != null)
-            _infoRow("🤝 Accepted by", donation.acceptedByNgoName!),
+          if (donation.ngoName != null) ...[
+            _infoRow("🤝 Accepted by", donation.ngoName!),
+            if (donation.ngoPhone != null)
+              _infoRow("📞 NGO Phone", donation.ngoPhone!),
+          ],
         ],
       ),
     );
@@ -301,19 +294,14 @@ Widget _infoRow(String title, String value) {
       children: [
         Text(
           "$title: ",
-          style: const TextStyle(
-              fontWeight: FontWeight.w600, fontSize: 12),
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
         ),
-        Expanded(
-          child: Text(
-            value,
-            style: const TextStyle(fontSize: 12),
-          ),
-        ),
+        Expanded(child: Text(value, style: const TextStyle(fontSize: 12))),
       ],
     ),
   );
 }
+
 String getExpiryText(DateTime expiry) {
   final now = DateTime.now();
   final diff = expiry.difference(now);
