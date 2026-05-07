@@ -36,29 +36,43 @@ class AuthGate extends StatelessWidget {
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
 
+    // If not logged in → show login
     if (user == null) {
       return const LoginScreen();
     }
 
-    return FutureBuilder(
+    print("CURRENT UID: ${user.uid}");
+
+    return FutureBuilder<DocumentSnapshot>(
       future: FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
           .get(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
         }
 
-        var role = snapshot.data!.get('role');
+        if (!snapshot.hasData || !snapshot.data!.exists) {
+          return const Scaffold(
+            body: Center(child: Text("User record not found in database")),
+          );
+        }
+
+        final data = snapshot.data!.data() as Map<String, dynamic>;
+        final role = data['role'];
 
         if (role == "donor") {
           return const DonorHomeScreen();
-        } else {
+        }
+
+        if (role == "ngo") {
           return const NgoHomeScreen();
         }
+
+        return const Scaffold(body: Center(child: Text("Invalid user role")));
       },
     );
   }

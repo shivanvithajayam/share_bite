@@ -5,8 +5,15 @@ import '../auth/login_screen.dart';
 import '../../models/donation_model.dart';
 import '../../utils/app_theme.dart';
 
-class NgoHomeScreen extends StatelessWidget {
+class NgoHomeScreen extends StatefulWidget {
   const NgoHomeScreen({super.key});
+
+  @override
+  State<NgoHomeScreen> createState() => _NgoHomeScreenState();
+}
+
+class _NgoHomeScreenState extends State<NgoHomeScreen> {
+  bool showPast = false;
 
   @override
   Widget build(BuildContext context) {
@@ -15,7 +22,7 @@ class NgoHomeScreen extends StatelessWidget {
 
       body: CustomScrollView(
         slivers: [
-          /// TOP BAR (same style as donor)
+          /// TOP BAR
           SliverAppBar(
             expandedHeight: 160,
             pinned: true,
@@ -36,7 +43,9 @@ class NgoHomeScreen extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
+
                     SizedBox(height: 4),
+
                     Text(
                       "Nearby food donations",
                       style: TextStyle(color: Colors.white70, fontSize: 13),
@@ -52,6 +61,7 @@ class NgoHomeScreen extends StatelessWidget {
                 icon: const Icon(Icons.logout, color: Colors.white),
                 onPressed: () async {
                   await FirebaseAuth.instance.signOut();
+
                   Navigator.pushAndRemoveUntil(
                     context,
                     MaterialPageRoute(builder: (_) => const LoginScreen()),
@@ -62,14 +72,66 @@ class NgoHomeScreen extends StatelessWidget {
             ],
           ),
 
+          /// TODAY / PAST TOGGLE
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        showPast = false;
+                      });
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 30,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: !showPast ? AppColors.blush : Colors.transparent,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Text("Today"),
+                    ),
+                  ),
+
+                  const SizedBox(width: 10),
+
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        showPast = true;
+                      });
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 30,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: showPast ? AppColors.mint : Colors.transparent,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Text("Past"),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
           /// DONATION LIST
           SliverToBoxAdapter(
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
                   .collection('donations')
-                  .where('status', isEqualTo: 'pending')
+                  .where('status', isEqualTo: showPast ? 'accepted' : 'pending')
                   .orderBy('createdAt', descending: true)
                   .snapshots(),
+
               builder: (context, snapshot) {
                 if (!snapshot.hasData) {
                   return const Padding(
@@ -81,10 +143,14 @@ class NgoHomeScreen extends StatelessWidget {
                 final docs = snapshot.data!.docs;
 
                 if (docs.isEmpty) {
-                  return const Padding(
-                    padding: EdgeInsets.only(top: 120),
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 120),
                     child: Center(
-                      child: Text("No donations available right now"),
+                      child: Text(
+                        showPast
+                            ? "No accepted donations yet"
+                            : "No donations available right now",
+                      ),
                     ),
                   );
                 }
@@ -100,7 +166,10 @@ class NgoHomeScreen extends StatelessWidget {
                   itemBuilder: (context, index) {
                     return Padding(
                       padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-                      child: _DonationCard(donation: donations[index]),
+                      child: _DonationCard(
+                        donation: donations[index],
+                        showPast: showPast,
+                      ),
                     );
                   },
                 );
@@ -115,38 +184,20 @@ class NgoHomeScreen extends StatelessWidget {
 
 class _DonationCard extends StatefulWidget {
   final DonationModel donation;
+  final bool showPast;
 
-  const _DonationCard({required this.donation});
+  const _DonationCard({required this.donation, required this.showPast});
 
   @override
   State<_DonationCard> createState() => _DonationCardState();
 }
 
 class _DonationCardState extends State<_DonationCard> {
-  bool expanded = false;
-  Duration getRemainingTime() {
-    final created = widget.donation.createdAt.toDate();
-    final expiry = created.add(const Duration(minutes: 30));
-    final remaining = expiry.difference(DateTime.now());
-
-    if (remaining.isNegative) {
-      rejectDonation(); // auto reject
-      return Duration.zero;
-    }
-
-    return remaining;
-  }
-
   Future<void> acceptDonation() async {
     await FirebaseFirestore.instance
         .collection('donations')
         .doc(widget.donation.id)
-        .update({
-          "status": "accepted",
-          "ngoName": "Helping Hands NGO",
-          "ngoPhone": "9876543210",
-          "acceptedAt": Timestamp.now(),
-        });
+        .update({"status": "accepted", "acceptedAt": Timestamp.now()});
   }
 
   Future<void> rejectDonation() async {
@@ -161,99 +212,132 @@ class _DonationCardState extends State<_DonationCard> {
     final donation = widget.donation;
 
     return Container(
+      margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.sand),
       ),
 
-      child: Column(
-        children: [
-          /// CARD HEADER
-          ListTile(
-            onTap: () {
-              setState(() {
-                expanded = !expanded;
-              });
-            },
+      child: ExpansionTile(
+        key: PageStorageKey(donation.id),
 
-            leading: donation.imageUrl != null
-                ? ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: Image.network(
-                      donation.imageUrl!,
-                      width: 55,
-                      height: 55,
-                      fit: BoxFit.cover,
+        tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+
+        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+
+        title: Row(
+          children: [
+            /// IMAGE
+            Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                color: AppColors.blush,
+              ),
+
+              child: donation.imageUrl != null && donation.imageUrl!.isNotEmpty
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.network(
+                        donation.imageUrl!,
+                        fit: BoxFit.cover,
+                      ),
+                    )
+                  : const Center(
+                      child: Text('🍱', style: TextStyle(fontSize: 24)),
                     ),
-                  )
-                : const Text("🍱", style: TextStyle(fontSize: 28)),
-
-            title: Text(
-              donation.foodName,
-              style: const TextStyle(fontWeight: FontWeight.w600),
             ),
 
-            subtitle: Text(donation.quantity),
+            const SizedBox(width: 14),
 
-            trailing: Icon(
-              expanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-            ),
-          ),
-
-          /// EXPANDED DETAILS
-          if (expanded)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            /// TEXT
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Divider(),
-
-                  _infoRow("Donor", donation.donorName),
-                  _infoRow("Phone", donation.donorPhone),
-                  _infoRow("Address", donation.address),
-                  _infoRow("Description", donation.description),
-
-                  const SizedBox(height: 14),
-
-                  Row(
-                    children: [
-                      /// ACCEPT BUTTON
-                      Expanded(
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          onPressed: acceptDonation,
-                          child: const Text("Accept"),
-                        ),
-                      ),
-
-                      const SizedBox(width: 10),
-
-                      /// REJECT BUTTON
-                      Expanded(
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red,
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          onPressed: rejectDonation,
-                          child: const Text("Reject"),
-                        ),
-                      ),
-                    ],
+                  Text(
+                    donation.foodName,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
+
+                  Text(donation.quantity, style: const TextStyle(fontSize: 12)),
                 ],
               ),
+            ),
+
+            /// STATUS CHIP
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+
+              decoration: BoxDecoration(
+                color: AppColors.blush,
+                borderRadius: BorderRadius.circular(20),
+              ),
+
+              child: Text(
+                widget.showPast ? "ACCEPTED" : "PENDING",
+
+                style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+
+        children: [
+          const SizedBox(height: 10),
+
+          _infoRow("👤 Donor", donation.donorName),
+          _infoRow("📞 Phone", donation.donorPhone),
+          _infoRow("📍 Address", donation.address),
+          _infoRow("📝 Description", donation.description ?? "No description"),
+
+          const SizedBox(height: 14),
+
+          /// BUTTONS ONLY FOR TODAY
+          if (!widget.showPast)
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+
+                    onPressed: acceptDonation,
+
+                    child: const Text("Accept"),
+                  ),
+                ),
+
+                const SizedBox(width: 10),
+
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+
+                    onPressed: rejectDonation,
+
+                    child: const Text("Reject"),
+                  ),
+                ),
+              ],
             ),
         ],
       ),
@@ -266,9 +350,14 @@ Widget _infoRow(String title, String value) {
   return Padding(
     padding: const EdgeInsets.only(bottom: 6),
     child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text("$title: ", style: const TextStyle(fontWeight: FontWeight.w600)),
-        Expanded(child: Text(value)),
+        Text(
+          "$title: ",
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+        ),
+
+        Expanded(child: Text(value, style: const TextStyle(fontSize: 12))),
       ],
     ),
   );

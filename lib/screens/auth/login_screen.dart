@@ -59,7 +59,15 @@ class _LoginScreenState extends State<LoginScreen>
           .doc(uid)
           .get();
 
-      String role = userDoc['role'];
+      if (!userDoc.exists) {
+        setState(() => _loading = false);
+        _snack("User record not found in database.");
+        return;
+      }
+
+      final data = userDoc.data() as Map<String, dynamic>;
+
+      String role = data['role'] ?? "";
 
       bool isDonorTab = _tabController.index == 0;
       bool isNgoTab = _tabController.index == 1;
@@ -91,7 +99,8 @@ class _LoginScreenState extends State<LoginScreen>
       }
     } catch (e) {
       setState(() => _loading = false);
-      _snack("Login failed. Check email or password.");
+      print(e);
+      _snack(e.toString());
     }
   }
 
