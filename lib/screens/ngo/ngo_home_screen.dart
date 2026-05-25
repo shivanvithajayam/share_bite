@@ -4,7 +4,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../auth/login_screen.dart';
 import '../../models/donation_model.dart';
 import '../../utils/app_theme.dart';
-
+import '../profile/ngo_profile_sheet.dart';
+import '../profile/edit_ngo_profile_sheet.dart';
+import 'package:geolocator/geolocator.dart';
 class NgoHomeScreen extends StatefulWidget {
   const NgoHomeScreen({super.key});
 
@@ -14,7 +16,58 @@ class NgoHomeScreen extends StatefulWidget {
 
 class _NgoHomeScreenState extends State<NgoHomeScreen> {
   bool showPast = false;
+  bool _popupShown = false;
+  void _openNgoProfileSheet(BuildContext context) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
 
+    builder: (context) {
+      return const NgoProfileSheet();
+    },
+  );
+}
+Future<void> _checkNgoProfileCompletion() async {
+
+  if (_popupShown) return;
+
+  final user = FirebaseAuth.instance.currentUser;
+
+  final doc = await FirebaseFirestore.instance
+      .collection('users')
+      .doc(user!.uid)
+      .get();
+
+  final data = doc.data();
+
+  final address = data?['address'] ?? "";
+
+  if (address.toString().trim().isEmpty) {
+
+    _popupShown = true;
+
+    Future.delayed(Duration.zero, () {
+
+      showModalBottomSheet(
+        context: context,
+        isDismissible: false,
+        enableDrag: false,
+        isScrollControlled: true,
+
+        builder: (context) {
+          return const EditNgoProfileSheet();
+        },
+      );
+    });
+  }
+}
+@override
+void initState() {
+  super.initState();
+
+  _checkNgoProfileCompletion();
+}
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -57,19 +110,24 @@ class _NgoHomeScreenState extends State<NgoHomeScreen> {
 
             /// LOGOUT
             actions: [
-              IconButton(
-                icon: const Icon(Icons.logout, color: Colors.white),
-                onPressed: () async {
-                  await FirebaseAuth.instance.signOut();
+  Padding(
+    padding: const EdgeInsets.only(right: 12),
+    child: GestureDetector(
+      onTap: () {
+        _openNgoProfileSheet(context);
+      },
 
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (_) => const LoginScreen()),
-                    (_) => false,
-                  );
-                },
-              ),
-            ],
+      child: const CircleAvatar(
+        backgroundColor: Colors.white,
+
+        child: Icon(
+          Icons.person,
+          color: AppColors.teal,
+        ),
+      ),
+    ),
+  ),
+],
           ),
 
           /// TODAY / PAST TOGGLE
@@ -126,13 +184,30 @@ class _NgoHomeScreenState extends State<NgoHomeScreen> {
           /// DONATION LIST
           SliverToBoxAdapter(
             child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('donations')
-                  .where('status', isEqualTo: showPast ? 'accepted' : 'pending')
-                  .orderBy('createdAt', descending: true)
-                  .snapshots(),
+              stream: showPast
+
+? FirebaseFirestore.instance
+    .collection('donations')
+    .where('status', isEqualTo: 'accepted')
+    .where(
+      'acceptedByNgoId',
+      isEqualTo: FirebaseAuth.instance.currentUser!.uid,
+    )
+    .orderBy('createdAt', descending: true)
+    .snapshots()
+
+: FirebaseFirestore.instance
+    .collection('donations')
+    .where('status', isEqualTo: 'pending')
+    .orderBy('createdAt', descending: true)
+    .snapshots(),
 
               builder: (context, snapshot) {
+                if (snapshot.hasError) {
+  return Center(
+    child: Text(snapshot.error.toString()),
+  );
+}
                 if (!snapshot.hasData) {
                   return const Padding(
                     padding: EdgeInsets.only(top: 100),
@@ -193,12 +268,29 @@ class _DonationCard extends StatefulWidget {
 }
 
 class _DonationCardState extends State<_DonationCard> {
+  double? distanceKm;
+  Duration? remainingTime;
+  @override
+void initState() {
+  super.initState();
+
+  calculateDistance();
+  startTimer();
+}
   Future<void> acceptDonation() async {
-    await FirebaseFirestore.instance
-        .collection('donations')
-        .doc(widget.donation.id)
-        .update({"status": "accepted", "acceptedAt": Timestamp.now()});
-  }
+
+  final user = FirebaseAuth.instance.currentUser;
+
+  await FirebaseFirestore.instance
+      .collection('donations')
+      .doc(widget.donation.id)
+      .update({
+
+    "status": "accepted",
+    "acceptedAt": Timestamp.now(),
+    "acceptedByNgoId": user!.uid,
+  });
+}
 
   Future<void> rejectDonation() async {
     await FirebaseFirestore.instance
@@ -206,11 +298,79 @@ class _DonationCardState extends State<_DonationCard> {
         .doc(widget.donation.id)
         .update({"status": "rejected"});
   }
+  Future<void> calculateDistance() async {
 
-  @override
+  final user = FirebaseAuth.instance.currentUser;
+
+  final ngoDoc = await FirebaseFirestore.instance
+      .collection('users')
+      .doc(user!.uid)
+      .get();
+
+  final ngoData = ngoDoc.data();
+
+  if (ngoData == null) return;
+
+  final ngoLat = ngoData['latitude'];
+  final ngoLng = ngoData['longitude'];
+
+  final donationLat = widget.donation.latitude;
+  final donationLng = widget.donation.longitude;
+
+  if (ngoLat == null ||
+      ngoLng == null ||
+      donationLat == 0 ||
+      donationLng == 0) {
+    return;
+  }
+
+  double meters = Geolocator.distanceBetween(
+    ngoLat,
+    ngoLng,
+    donationLat,
+    donationLng,
+  );
+
+  setState(() {
+    distanceKm = meters / 1000;
+  });
+}
+
+  
+  void startTimer() {
+
+  final createdAt = widget.donation.createdAt;
+
+  Future.doWhile(() async {
+
+    final now = DateTime.now();
+
+    final difference = now.difference(createdAt);
+
+    final remaining =
+        const Duration(minutes: 30) - difference;
+
+    if (!mounted) return false;
+
+    setState(() {
+      remainingTime = remaining;
+    });
+
+    await Future.delayed(const Duration(seconds: 1));
+
+    return remaining.inSeconds > 0;
+  });
+}@override
   Widget build(BuildContext context) {
     final donation = widget.donation;
+  if (
+  (distanceKm != null && distanceKm! > 5) ||
 
+  (remainingTime != null &&
+      remainingTime!.inMinutes <= -5)
+){
+  return const SizedBox.shrink();
+}
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
@@ -262,7 +422,34 @@ class _DonationCardState extends State<_DonationCard> {
                     style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
 
-                  Text(donation.quantity, style: const TextStyle(fontSize: 12)),
+                  Text(
+  donation.quantity,
+  style: const TextStyle(fontSize: 12),
+),
+
+if (distanceKm != null)
+  Text(
+    "📍 ${distanceKm!.toStringAsFixed(1)} km away",
+    style: const TextStyle(
+      fontSize: 11,
+      color: AppColors.tealDark,
+      fontWeight: FontWeight.w500,
+    ),
+  ),
+
+if (remainingTime != null)
+  Text(
+    remainingTime!.inSeconds <= 0
+        ? "⛔ Expired"
+        : "⏰ ${remainingTime!.inMinutes} min left",
+    style: TextStyle(
+      fontSize: 11,
+      color: remainingTime!.inMinutes <= 10
+          ? Colors.red
+          : AppColors.tealDark,
+      fontWeight: FontWeight.w600,
+    ),
+  ),
                 ],
               ),
             ),
@@ -291,10 +478,42 @@ class _DonationCardState extends State<_DonationCard> {
         children: [
           const SizedBox(height: 10),
 
-          _infoRow("👤 Donor", donation.donorName),
-          _infoRow("📞 Phone", donation.donorPhone),
-          _infoRow("📍 Address", donation.address),
-          _infoRow("📝 Description", donation.description ?? "No description"),
+          _infoRow("🍱 Food", donation.foodName),
+
+_infoRow("📦 Quantity", donation.quantity),
+
+_infoRow("👤 Donor", donation.donorName),
+
+_infoRow("📞 Phone", donation.donorPhone),
+
+_infoRow("📍 Pickup Address", donation.address),
+
+if (distanceKm != null)
+  _infoRow(
+    "📏 Distance",
+    "${distanceKm!.toStringAsFixed(1)} km away",
+  ),
+
+if (remainingTime != null)
+
+  _infoRow(
+    "⏰ Time Left",
+
+    remainingTime!.inSeconds <= 0
+        ? "Expired"
+        : "${remainingTime!.inMinutes} minutes",
+  ),
+
+_infoRow(
+  "📝 Description",
+  donation.description,
+),
+
+_infoRow(
+  "🕒 Posted At",
+  "${donation.createdAt.hour.toString().padLeft(2, '0')}:"
+  "${donation.createdAt.minute.toString().padLeft(2, '0')}",
+),
 
           const SizedBox(height: 14),
 

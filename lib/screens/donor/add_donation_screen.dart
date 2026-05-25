@@ -6,7 +6,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../utils/app_theme.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
 class AddDonationScreen extends StatefulWidget {
   const AddDonationScreen({super.key});
 
@@ -15,10 +16,19 @@ class AddDonationScreen extends StatefulWidget {
 }
 
 class _AddDonationScreenState extends State<AddDonationScreen> {
+  double? _latitude;
+double? _longitude;
+    @override
+void initState() {
+  super.initState();
+  _loadUserAddress();
+  _getCurrentLocation();
+}
   final _foodCtrl = TextEditingController();
   final _qtyCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
   final _addressCtrl = TextEditingController();
+  final _addressDetailsCtrl = TextEditingController();
 
   File? _image;
   final ImagePicker _picker = ImagePicker();
@@ -52,6 +62,81 @@ class _AddDonationScreenState extends State<AddDonationScreen> {
     
   }
 
+  Future<void> _loadUserAddress() async {
+  final user = FirebaseAuth.instance.currentUser;
+
+  final doc = await FirebaseFirestore.instance
+      .collection('users')
+      .doc(user!.uid)
+      .get();
+
+  final data = doc.data();
+
+  if (data != null &&
+    data['address'] != null &&
+    data['address'].toString().isNotEmpty) {
+  setState(() {
+    _addressCtrl.text = data['address'];
+  });
+}
+}
+  Future<void> _getCurrentLocation() async {
+  bool serviceEnabled;
+  LocationPermission permission;
+
+  serviceEnabled = await Geolocator.isLocationServiceEnabled();
+
+  if (!serviceEnabled) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Please enable location services"),
+      ),
+    );
+    return;
+  }
+
+  permission = await Geolocator.checkPermission();
+
+  if (permission == LocationPermission.denied) {
+    permission = await Geolocator.requestPermission();
+  }
+
+  if (permission == LocationPermission.deniedForever) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Location permission permanently denied"),
+      ),
+    );
+    return;
+  }
+
+  Position position = await Geolocator.getCurrentPosition(
+    desiredAccuracy: LocationAccuracy.high,
+  );
+
+  _latitude = position.latitude;
+  _longitude = position.longitude;
+
+  List<Placemark> placemarks = await placemarkFromCoordinates(
+    _latitude!,
+    _longitude!,
+  );
+
+  Placemark place = placemarks.first;
+
+  String address =
+      "${place.street}, ${place.locality}, ${place.administrativeArea}, ${place.country}";
+
+  setState(() {
+    _addressCtrl.text = address;
+  });
+
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(
+      content: Text("Location fetched successfully"),
+    ),
+  );
+}
   // 📸 Pick Image
   Future<void> _pickImage() async {
     final picked = await _picker.pickImage(
@@ -70,10 +155,16 @@ class _AddDonationScreenState extends State<AddDonationScreen> {
   // 🚀 Submit Donation
   Future<void> _submit() async {
     if (_foodCtrl.text.isEmpty ||
-        _qtyCtrl.text.isEmpty ||
-        _addressCtrl.text.isEmpty) {
+    _qtyCtrl.text.isEmpty ||
+    _descCtrl.text.isEmpty ||
+    _addressCtrl.text.isEmpty ||
+    _addressDetailsCtrl.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please fill all required fields")),
+        const SnackBar(
+  content: Text(
+    "Please fill all the fields",
+  ),
+),
       );
       return;
     }
@@ -101,17 +192,26 @@ class _AddDonationScreenState extends State<AddDonationScreen> {
       "quantity": _qtyCtrl.text,
       "description": _descCtrl.text,
       "expiryTime": Timestamp.now().toDate().add(const Duration(hours: 3)),
-      "address": _addressCtrl.text,
-      "latitude": 0,
-      "longitude": 0,
+      "address":
+    "${_addressDetailsCtrl.text.trim()}, ${_addressCtrl.text.trim()}",
+      "latitude": _latitude,
+"longitude": _longitude,
       "status": "pending",
       "createdAt": Timestamp.now(),
       "imageUrl": imageUrl ?? "",
     });
 
-    setState(() => _loading = false);
+    await FirebaseFirestore.instance
+    .collection('users')
+    .doc(user.uid)
+    .update({
+  "address":
+    "${_addressDetailsCtrl.text.trim()}, ${_addressCtrl.text.trim()}",
+});
 
-    Navigator.pop(context);
+setState(() => _loading = false);
+
+Navigator.pop(context);
   }
 
   Widget _inputField(String label, TextEditingController controller) {
@@ -173,7 +273,29 @@ class _AddDonationScreenState extends State<AddDonationScreen> {
             _inputField("Food Name", _foodCtrl),
             _inputField("Quantity (e.g. 10 plates)", _qtyCtrl),
             _inputField("Description", _descCtrl),
+            
             _inputField("Pickup Address", _addressCtrl),
+            const SizedBox(height: 10),
+
+
+            const SizedBox(height: 16),
+
+_inputField(
+  "Apartment / Landmark / Extra Details",
+  _addressDetailsCtrl,
+),
+
+
+const SizedBox(height: 6),
+
+if (_addressCtrl.text.isNotEmpty)
+  const Text(
+    "Please confirm or edit pickup address",
+    style: TextStyle(
+      fontSize: 12,
+      color: AppColors.mutedText,
+    ),
+  ),
 
             const SizedBox(height: 25),
 

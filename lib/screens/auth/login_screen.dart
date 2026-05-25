@@ -97,11 +97,35 @@ class _LoginScreenState extends State<LoginScreen>
           MaterialPageRoute(builder: (_) => const NgoHomeScreen()),
         );
       }
-    } catch (e) {
-      setState(() => _loading = false);
-      print(e);
-      _snack(e.toString());
-    }
+    } on FirebaseAuthException catch (e) {
+setState(() => _loading = false);
+  String message = "Login failed";
+
+  if (e.code == 'invalid-email') {
+    message = "Please enter a valid email";
+  }
+
+  else if (e.code == 'user-not-found') {
+    message = "No account found with this email";
+  }
+
+  else if (e.code == 'wrong-password') {
+    message = "Incorrect password";
+  }
+
+  else if (e.code == 'invalid-credential') {
+    message = "Invalid email or password";
+  }
+
+  else if (e.code == 'too-many-requests') {
+    message =
+        "Too many attempts. Please try again later";
+  }
+
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(content: Text(message)),
+  );
+}
   }
 
   void _snack(String msg) =>

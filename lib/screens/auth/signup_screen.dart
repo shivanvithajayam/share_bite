@@ -65,6 +65,9 @@ class _SignupScreenState extends State<SignupScreen> {
         "phone": _phoneCtrl.text.trim(),
         "role": _role,
         "ngoRegId": _ngoRegCtrl.text.trim(),
+        "address": "",
+        "latitude": null,
+        "longitude": null,
         "createdAt": Timestamp.now(),
       });
 
