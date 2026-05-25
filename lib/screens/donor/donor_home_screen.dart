@@ -270,7 +270,7 @@ class _DonationCard extends StatelessWidget {
           _infoRow("🍱 Food", donation.foodName),
           _infoRow("🍽 Quantity", donation.quantity),
           _infoRow("📍 Address", donation.address),
-          _infoRow("📝 Description", donation.description ?? "No description"),
+          _infoRow("📝 Description", donation.description ??"No description"),
           _infoRow("⏰ Expiry", getExpiryText(donation.expiryTime)),
           _infoRow("📦 Status", donation.status),
 
