@@ -21,6 +21,7 @@ class DonationModel {
   final String? ngoName;
   final String? ngoPhone;
   final DateTime? acceptedAt;
+  final bool pickupStarted;
 
   DonationModel({
     required this.id,
@@ -36,6 +37,7 @@ class DonationModel {
     required this.longitude,
     required this.status,
     required this.createdAt,
+    required this.pickupStarted,
     this.imageUrl,
     this.acceptedByNgoId,
     this.acceptedByNgoName,
@@ -69,6 +71,7 @@ class DonationModel {
       acceptedByNgoPhone: data['acceptedByNgoPhone'],
       ngoName: data['ngoName'],
       ngoPhone: data['ngoPhone'],
+      pickupStarted: data['pickupStarted'] ?? false,
       acceptedAt: data['acceptedAt'] != null
           ? (data['acceptedAt'] as Timestamp).toDate()
           : null,

@@ -7,6 +7,9 @@ import '../../utils/app_theme.dart';
 import '../profile/ngo_profile_sheet.dart';
 import '../profile/edit_ngo_profile_sheet.dart';
 import 'package:geolocator/geolocator.dart';
+import 'review_dialog.dart';
+import 'dart:async';
+
 class NgoHomeScreen extends StatefulWidget {
   const NgoHomeScreen({super.key});
 
@@ -18,56 +21,56 @@ class _NgoHomeScreenState extends State<NgoHomeScreen> {
   bool showPast = false;
   bool _popupShown = false;
   void _openNgoProfileSheet(BuildContext context) {
-  showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
 
-    builder: (context) {
-      return const NgoProfileSheet();
-    },
-  );
-}
-Future<void> _checkNgoProfileCompletion() async {
-
-  if (_popupShown) return;
-
-  final user = FirebaseAuth.instance.currentUser;
-
-  final doc = await FirebaseFirestore.instance
-      .collection('users')
-      .doc(user!.uid)
-      .get();
-
-  final data = doc.data();
-
-  final address = data?['address'] ?? "";
-
-  if (address.toString().trim().isEmpty) {
-
-    _popupShown = true;
-
-    Future.delayed(Duration.zero, () {
-
-      showModalBottomSheet(
-        context: context,
-        isDismissible: false,
-        enableDrag: false,
-        isScrollControlled: true,
-
-        builder: (context) {
-          return const EditNgoProfileSheet();
-        },
-      );
-    });
+      builder: (context) {
+        return const NgoProfileSheet();
+      },
+    );
   }
-}
-@override
-void initState() {
-  super.initState();
 
-  _checkNgoProfileCompletion();
-}
+  Future<void> _checkNgoProfileCompletion() async {
+    if (_popupShown) return;
+
+    final user = FirebaseAuth.instance.currentUser;
+
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user!.uid)
+        .get();
+
+    final data = doc.data();
+
+    final address = data?['address'] ?? "";
+
+    if (address.toString().trim().isEmpty) {
+      _popupShown = true;
+
+      Future.delayed(Duration.zero, () {
+        showModalBottomSheet(
+          context: context,
+          isDismissible: false,
+          enableDrag: false,
+          isScrollControlled: true,
+
+          builder: (context) {
+            return const EditNgoProfileSheet();
+          },
+        );
+      });
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    _checkNgoProfileCompletion();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -110,24 +113,21 @@ void initState() {
 
             /// LOGOUT
             actions: [
-  Padding(
-    padding: const EdgeInsets.only(right: 12),
-    child: GestureDetector(
-      onTap: () {
-        _openNgoProfileSheet(context);
-      },
+              Padding(
+                padding: const EdgeInsets.only(right: 12),
+                child: GestureDetector(
+                  onTap: () {
+                    _openNgoProfileSheet(context);
+                  },
 
-      child: const CircleAvatar(
-        backgroundColor: Colors.white,
+                  child: const CircleAvatar(
+                    backgroundColor: Colors.white,
 
-        child: Icon(
-          Icons.person,
-          color: AppColors.teal,
-        ),
-      ),
-    ),
-  ),
-],
+                    child: Icon(Icons.person, color: AppColors.teal),
+                  ),
+                ),
+              ),
+            ],
           ),
 
           /// TODAY / PAST TOGGLE
@@ -185,29 +185,25 @@ void initState() {
           SliverToBoxAdapter(
             child: StreamBuilder<QuerySnapshot>(
               stream: showPast
-
-? FirebaseFirestore.instance
-    .collection('donations')
-    .where('status', isEqualTo: 'accepted')
-    .where(
-      'acceptedByNgoId',
-      isEqualTo: FirebaseAuth.instance.currentUser!.uid,
-    )
-    .orderBy('createdAt', descending: true)
-    .snapshots()
-
-: FirebaseFirestore.instance
-    .collection('donations')
-    .where('status', isEqualTo: 'pending')
-    .orderBy('createdAt', descending: true)
-    .snapshots(),
+                  ? FirebaseFirestore.instance
+                        .collection('donations')
+                        .where('status', isEqualTo: 'accepted')
+                        .where(
+                          'acceptedByNgoId',
+                          isEqualTo: FirebaseAuth.instance.currentUser!.uid,
+                        )
+                        .orderBy('createdAt', descending: true)
+                        .snapshots()
+                  : FirebaseFirestore.instance
+                        .collection('donations')
+                        .where('status', isEqualTo: 'pending')
+                        .orderBy('createdAt', descending: true)
+                        .snapshots(),
 
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
-  return Center(
-    child: Text(snapshot.error.toString()),
-  );
-}
+                  return Center(child: Text(snapshot.error.toString()));
+                }
                 if (!snapshot.hasData) {
                   return const Padding(
                     padding: EdgeInsets.only(top: 100),
@@ -270,27 +266,38 @@ class _DonationCard extends StatefulWidget {
 class _DonationCardState extends State<_DonationCard> {
   double? distanceKm;
   Duration? remainingTime;
+  bool pickupStartedLocal = false;
+  StreamSubscription<Position>? positionStream;
   @override
-void initState() {
-  super.initState();
+  void initState() {
+    super.initState();
 
-  calculateDistance();
-  startTimer();
-}
+    calculateDistance();
+    startTimer();
+  }
+
   Future<void> acceptDonation() async {
+    final user = FirebaseAuth.instance.currentUser;
 
-  final user = FirebaseAuth.instance.currentUser;
+    final ngoDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user!.uid)
+        .get();
 
-  await FirebaseFirestore.instance
-      .collection('donations')
-      .doc(widget.donation.id)
-      .update({
+    final ngoData = ngoDoc.data();
 
-    "status": "accepted",
-    "acceptedAt": Timestamp.now(),
-    "acceptedByNgoId": user!.uid,
-  });
-}
+    await FirebaseFirestore.instance
+        .collection('donations')
+        .doc(widget.donation.id)
+        .update({
+          "status": "accepted",
+          "acceptedAt": Timestamp.now(),
+          "acceptedByNgoId": user.uid,
+
+          "ngoName": ngoData?['name'] ?? "",
+          "ngoPhone": ngoData?['phone'] ?? "",
+        });
+  }
 
   Future<void> rejectDonation() async {
     await FirebaseFirestore.instance
@@ -298,79 +305,113 @@ void initState() {
         .doc(widget.donation.id)
         .update({"status": "rejected"});
   }
+
   Future<void> calculateDistance() async {
+    final user = FirebaseAuth.instance.currentUser;
 
-  final user = FirebaseAuth.instance.currentUser;
+    final ngoDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user!.uid)
+        .get();
 
-  final ngoDoc = await FirebaseFirestore.instance
-      .collection('users')
-      .doc(user!.uid)
-      .get();
+    final ngoData = ngoDoc.data();
 
-  final ngoData = ngoDoc.data();
+    if (ngoData == null) return;
 
-  if (ngoData == null) return;
+    final ngoLat = ngoData['latitude'];
+    final ngoLng = ngoData['longitude'];
 
-  final ngoLat = ngoData['latitude'];
-  final ngoLng = ngoData['longitude'];
+    final donationLat = widget.donation.latitude;
+    final donationLng = widget.donation.longitude;
 
-  final donationLat = widget.donation.latitude;
-  final donationLng = widget.donation.longitude;
+    if (ngoLat == null ||
+        ngoLng == null ||
+        donationLat == 0 ||
+        donationLng == 0) {
+      return;
+    }
 
-  if (ngoLat == null ||
-      ngoLng == null ||
-      donationLat == 0 ||
-      donationLng == 0) {
-    return;
-  }
-
-  double meters = Geolocator.distanceBetween(
-    ngoLat,
-    ngoLng,
-    donationLat,
-    donationLng,
-  );
-
-  setState(() {
-    distanceKm = meters / 1000;
-  });
-}
-
-  
-  void startTimer() {
-
-  final createdAt = widget.donation.createdAt;
-
-  Future.doWhile(() async {
-
-    final now = DateTime.now();
-
-    final difference = now.difference(createdAt);
-
-    final remaining =
-        const Duration(minutes: 30) - difference;
-
-    if (!mounted) return false;
+    double meters = Geolocator.distanceBetween(
+      ngoLat,
+      ngoLng,
+      donationLat,
+      donationLng,
+    );
 
     setState(() {
-      remainingTime = remaining;
+      distanceKm = meters / 1000;
+    });
+  }
+
+  void startTimer() {
+    final createdAt = widget.donation.createdAt;
+
+    Future.doWhile(() async {
+      final now = DateTime.now();
+
+      final difference = now.difference(createdAt);
+
+      final remaining = const Duration(minutes: 30) - difference;
+
+      if (!mounted) return false;
+
+      setState(() {
+        remainingTime = remaining;
+      });
+
+      await Future.delayed(const Duration(seconds: 1));
+
+      return remaining.inSeconds > 0;
+    });
+  }
+
+  Future<void> startLiveTracking() async {
+    LocationPermission permission = await Geolocator.requestPermission();
+
+    if (permission == LocationPermission.denied ||
+        permission == LocationPermission.deniedForever) {
+      return;
+    }
+
+    /// immediately show tracking button
+    await FirebaseFirestore.instance
+        .collection('donations')
+        .doc(widget.donation.id)
+        .update({'pickupStarted': true});
+    setState(() {
+      pickupStartedLocal = true;
     });
 
-    await Future.delayed(const Duration(seconds: 1));
+    positionStream =
+        Geolocator.getPositionStream(
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.high,
+            distanceFilter: 5,
+          ),
+        ).listen((Position position) async {
+          await FirebaseFirestore.instance
+              .collection('donations')
+              .doc(widget.donation.id)
+              .update({
+                'ngoLiveLat': position.latitude,
+                'ngoLiveLng': position.longitude,
+              });
+        });
+  }
 
-    return remaining.inSeconds > 0;
-  });
-}@override
+  @override
+  void dispose() {
+    positionStream?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final donation = widget.donation;
-  if (
-  (distanceKm != null && distanceKm! > 5) ||
-
-  (remainingTime != null &&
-      remainingTime!.inMinutes <= -5)
-){
-  return const SizedBox.shrink();
-}
+    if ((distanceKm != null && distanceKm! > 5) ||
+        (remainingTime != null && remainingTime!.inMinutes <= -5)) {
+      return const SizedBox.shrink();
+    }
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
@@ -422,34 +463,31 @@ void initState() {
                     style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
 
-                  Text(
-  donation.quantity,
-  style: const TextStyle(fontSize: 12),
-),
+                  Text(donation.quantity, style: const TextStyle(fontSize: 12)),
 
-if (distanceKm != null)
-  Text(
-    "📍 ${distanceKm!.toStringAsFixed(1)} km away",
-    style: const TextStyle(
-      fontSize: 11,
-      color: AppColors.tealDark,
-      fontWeight: FontWeight.w500,
-    ),
-  ),
+                  if (distanceKm != null)
+                    Text(
+                      "📍 ${distanceKm!.toStringAsFixed(1)} km away",
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppColors.tealDark,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
 
-if (remainingTime != null)
-  Text(
-    remainingTime!.inSeconds <= 0
-        ? "⛔ Expired"
-        : "⏰ ${remainingTime!.inMinutes} min left",
-    style: TextStyle(
-      fontSize: 11,
-      color: remainingTime!.inMinutes <= 10
-          ? Colors.red
-          : AppColors.tealDark,
-      fontWeight: FontWeight.w600,
-    ),
-  ),
+                  if (remainingTime != null)
+                    Text(
+                      remainingTime!.inSeconds <= 0
+                          ? "⛔ Expired"
+                          : "⏰ ${remainingTime!.inMinutes} min left",
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: remainingTime!.inMinutes <= 10
+                            ? Colors.red
+                            : AppColors.tealDark,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -480,42 +518,95 @@ if (remainingTime != null)
 
           _infoRow("🍱 Food", donation.foodName),
 
-_infoRow("📦 Quantity", donation.quantity),
+          _infoRow("📦 Quantity", donation.quantity),
 
-_infoRow("👤 Donor", donation.donorName),
+          _infoRow("👤 Donor", donation.donorName),
 
-_infoRow("📞 Phone", donation.donorPhone),
+          _infoRow("📞 Phone", donation.donorPhone),
 
-_infoRow("📍 Pickup Address", donation.address),
+          _infoRow("📍 Pickup Address", donation.address),
 
-if (distanceKm != null)
-  _infoRow(
-    "📏 Distance",
-    "${distanceKm!.toStringAsFixed(1)} km away",
-  ),
+          if (distanceKm != null)
+            _infoRow(
+              "📏 Distance",
+              "${distanceKm!.toStringAsFixed(1)} km away",
+            ),
 
-if (remainingTime != null)
+          if (remainingTime != null)
+            _infoRow(
+              "⏰ Time Left",
 
-  _infoRow(
-    "⏰ Time Left",
+              remainingTime!.inSeconds <= 0
+                  ? "Expired"
+                  : "${remainingTime!.inMinutes} minutes",
+            ),
 
-    remainingTime!.inSeconds <= 0
-        ? "Expired"
-        : "${remainingTime!.inMinutes} minutes",
-  ),
+          _infoRow("📝 Description", donation.description),
 
-_infoRow(
-  "📝 Description",
-  donation.description,
-),
-
-_infoRow(
-  "🕒 Posted At",
-  "${donation.createdAt.hour.toString().padLeft(2, '0')}:"
-  "${donation.createdAt.minute.toString().padLeft(2, '0')}",
-),
+          _infoRow(
+            "🕒 Posted At",
+            "${donation.createdAt.hour.toString().padLeft(2, '0')}:"
+                "${donation.createdAt.minute.toString().padLeft(2, '0')}",
+          ),
 
           const SizedBox(height: 14),
+          if (widget.showPast) ...[
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (_) => ReviewDialog(
+                      donorId: donation.donorId,
+                      donationId: donation.id,
+                    ),
+                  );
+                },
+
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.teal,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+
+                child: const Text(
+                  "Review Donor",
+                  style: TextStyle(color: Colors.black),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 10),
+
+            SizedBox(
+              width: double.infinity,
+
+              child: ElevatedButton(
+                onPressed: startLiveTracking,
+
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: pickupStartedLocal
+                      ? Colors.green
+                      : Colors.orange,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+
+                child: Text(
+                  pickupStartedLocal ? "Pickup Started" : "Start Pickup",
+
+                  style: const TextStyle(color: Colors.black),
+                ),
+              ),
+            ),
+          ],
 
           /// BUTTONS ONLY FOR TODAY
           if (!widget.showPast)
@@ -524,7 +615,7 @@ _infoRow(
                 Expanded(
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
+                      backgroundColor: const Color.fromARGB(255, 119, 184, 121),
                       padding: const EdgeInsets.symmetric(vertical: 12),
 
                       shape: RoundedRectangleBorder(
@@ -534,7 +625,10 @@ _infoRow(
 
                     onPressed: acceptDonation,
 
-                    child: const Text("Accept"),
+                    child: const Text(
+                      "Accept",
+                      style: TextStyle(color: Colors.black),
+                    ),
                   ),
                 ),
 
@@ -543,7 +637,12 @@ _infoRow(
                 Expanded(
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
+                      backgroundColor: const Color.from(
+                        alpha: 1,
+                        red: 0.878,
+                        green: 0.302,
+                        blue: 0.263,
+                      ),
                       padding: const EdgeInsets.symmetric(vertical: 12),
 
                       shape: RoundedRectangleBorder(
@@ -553,7 +652,10 @@ _infoRow(
 
                     onPressed: rejectDonation,
 
-                    child: const Text("Reject"),
+                    child: const Text(
+                      "Reject",
+                      style: TextStyle(color: Colors.black),
+                    ),
                   ),
                 ),
               ],

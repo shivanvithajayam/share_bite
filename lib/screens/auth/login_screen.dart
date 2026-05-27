@@ -16,8 +16,11 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final _emailCtrl = TextEditingController();
-  final _passCtrl = TextEditingController();
+  final _donorEmailCtrl = TextEditingController();
+  final _donorPassCtrl = TextEditingController();
+
+  final _ngoEmailCtrl = TextEditingController();
+  final _ngoPassCtrl = TextEditingController();
   bool _obscure = true;
   bool _loading = false;
 
@@ -30,13 +33,25 @@ class _LoginScreenState extends State<LoginScreen>
   @override
   void dispose() {
     _tabController.dispose();
-    _emailCtrl.dispose();
-    _passCtrl.dispose();
+    _donorEmailCtrl.dispose();
+    _donorPassCtrl.dispose();
+    _ngoEmailCtrl.dispose();
+    _ngoPassCtrl.dispose();
     super.dispose();
   }
 
   Future<void> _login() async {
-    if (_emailCtrl.text.isEmpty || _passCtrl.text.isEmpty) {
+    // Login with Firebase Authentication
+    bool isDonorTab = _tabController.index == 0;
+
+    final email = isDonorTab
+        ? _donorEmailCtrl.text.trim()
+        : _ngoEmailCtrl.text.trim();
+
+    final password = isDonorTab
+        ? _donorPassCtrl.text.trim()
+        : _ngoPassCtrl.text.trim();
+    if (email.isEmpty || password.isEmpty) {
       _snack('Please fill all fields');
       return;
     }
@@ -45,11 +60,19 @@ class _LoginScreenState extends State<LoginScreen>
       setState(() => _loading = true);
 
       // Login with Firebase Authentication
+      bool isDonorTab = _tabController.index == 0;
+
+      final email = isDonorTab
+          ? _donorEmailCtrl.text.trim()
+          : _ngoEmailCtrl.text.trim();
+
+      final password = isDonorTab
+          ? _donorPassCtrl.text.trim()
+          : _ngoPassCtrl.text.trim();
+
+      // Login with Firebase Authentication
       UserCredential userCredential = await FirebaseAuth.instance
-          .signInWithEmailAndPassword(
-            email: _emailCtrl.text.trim(),
-            password: _passCtrl.text.trim(),
-          );
+          .signInWithEmailAndPassword(email: email, password: password);
 
       String uid = userCredential.user!.uid;
 
@@ -69,7 +92,6 @@ class _LoginScreenState extends State<LoginScreen>
 
       String role = data['role'] ?? "";
 
-      bool isDonorTab = _tabController.index == 0;
       bool isNgoTab = _tabController.index == 1;
 
       setState(() => _loading = false);
@@ -98,34 +120,25 @@ class _LoginScreenState extends State<LoginScreen>
         );
       }
     } on FirebaseAuthException catch (e) {
-setState(() => _loading = false);
-  String message = "Login failed";
+      setState(() => _loading = false);
+      String message = "Login failed";
 
-  if (e.code == 'invalid-email') {
-    message = "Please enter a valid email";
-  }
+      if (e.code == 'invalid-email') {
+        message = "Please enter a valid email";
+      } else if (e.code == 'user-not-found') {
+        message = "No account found with this email";
+      } else if (e.code == 'wrong-password') {
+        message = "Incorrect password";
+      } else if (e.code == 'invalid-credential') {
+        message = "Invalid email or password";
+      } else if (e.code == 'too-many-requests') {
+        message = "Too many attempts. Please try again later";
+      }
 
-  else if (e.code == 'user-not-found') {
-    message = "No account found with this email";
-  }
-
-  else if (e.code == 'wrong-password') {
-    message = "Incorrect password";
-  }
-
-  else if (e.code == 'invalid-credential') {
-    message = "Invalid email or password";
-  }
-
-  else if (e.code == 'too-many-requests') {
-    message =
-        "Too many attempts. Please try again later";
-  }
-
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text(message)),
-  );
-}
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
+    }
   }
 
   void _snack(String msg) =>
@@ -258,7 +271,7 @@ setState(() => _loading = false);
 
                     // Email
                     _buildField(
-                      controller: _emailCtrl,
+                      controller: isDonor ? _donorEmailCtrl : _ngoEmailCtrl,
                       label: 'Email address',
                       hint: 'you@email.com',
                       icon: Icons.email_outlined,
@@ -268,7 +281,7 @@ setState(() => _loading = false);
 
                     // Password
                     _buildField(
-                      controller: _passCtrl,
+                      controller: isDonor ? _donorPassCtrl : _ngoPassCtrl,
                       label: 'Password',
                       hint: '••••••••',
                       icon: Icons.lock_outline,
