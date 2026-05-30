@@ -1,6 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class DonationModel {
+  final int? donorReviewRating;
+final bool donorReviewSubmitted;
+  final int? reviewRating;
+final String? reviewComment;
+final bool reviewSubmitted;
   final String id;
   final String donorId;
   final String donorName;
@@ -22,8 +27,20 @@ class DonationModel {
   final String? ngoPhone;
   final DateTime? acceptedAt;
   final bool pickupStarted;
+  final double? ngoLat;
+final double? ngoLng;
 
+
+final String? pickupOtp;
+final bool otpVerified;
+final bool donorAcknowledged;
   DonationModel({
+    this.reviewRating,
+this.reviewComment,
+this.reviewSubmitted = false,
+this.donorReviewRating,
+this.donorReviewSubmitted = false,
+
     required this.id,
     required this.donorId,
     required this.donorName,
@@ -38,6 +55,12 @@ class DonationModel {
     required this.status,
     required this.createdAt,
     required this.pickupStarted,
+    this.ngoLat,
+this.ngoLng,
+
+this.donorAcknowledged = false,
+this.pickupOtp,
+this.otpVerified = false,
     this.imageUrl,
     this.acceptedByNgoId,
     this.acceptedByNgoName,
@@ -45,6 +68,7 @@ class DonationModel {
     this.ngoName,
     this.ngoPhone,
     this.acceptedAt,
+    
   });
 
   // 🔹 Convert Firestore → Model
@@ -52,6 +76,17 @@ class DonationModel {
     final data = doc.data() as Map<String, dynamic>;
 
     return DonationModel(
+      donorReviewRating:
+    data['donorReviewRating'],
+
+donorReviewSubmitted:
+    data['donorReviewSubmitted'] ?? false,
+      donorAcknowledged:
+    data['donorAcknowledged'] ?? false,
+    reviewRating: data['reviewRating'],
+reviewComment: data['reviewComment'],
+reviewSubmitted:
+    data['reviewSubmitted'] ?? false,
       id: doc.id,
       donorId: data['donorId'] ?? '',
       donorName: data['donorName'] ?? '',
@@ -72,6 +107,11 @@ class DonationModel {
       ngoName: data['ngoName'],
       ngoPhone: data['ngoPhone'],
       pickupStarted: data['pickupStarted'] ?? false,
+      ngoLat: (data['ngoLat'] as num?)?.toDouble(),
+      ngoLng: (data['ngoLng'] as num?)?.toDouble(),
+
+pickupOtp: data['pickupOtp'],
+otpVerified: data['otpVerified'] ?? false,
       acceptedAt: data['acceptedAt'] != null
           ? (data['acceptedAt'] as Timestamp).toDate()
           : null,
@@ -81,7 +121,17 @@ class DonationModel {
   // 🔹 Convert Model → Firestore
   Map<String, dynamic> toMap() {
     return {
+      'donorReviewRating':
+    donorReviewRating,
+
+'donorReviewSubmitted':
+    donorReviewSubmitted,
+      'donorAcknowledged':
+    donorAcknowledged,
       'donorId': donorId,
+      'reviewRating': reviewRating,
+'reviewComment': reviewComment,
+'reviewSubmitted': reviewSubmitted,
       'donorName': donorName,
       'donorPhone': donorPhone,
       'foodName': foodName,
@@ -98,6 +148,12 @@ class DonationModel {
       'acceptedByNgoName': acceptedByNgoName,
       'acceptedByNgoPhone': acceptedByNgoPhone,
       'acceptedAt': acceptedAt != null ? Timestamp.fromDate(acceptedAt!) : null,
+      'pickupStarted': pickupStarted,
+'ngoLat': ngoLat,
+'ngoLng': ngoLng,
+
+'pickupOtp': pickupOtp,
+'otpVerified': otpVerified,
     };
   }
 }

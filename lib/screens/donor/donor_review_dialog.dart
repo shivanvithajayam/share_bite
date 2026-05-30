@@ -1,21 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-class ReviewDialog extends StatefulWidget {
-  final String donorId;
+class DonorReviewDialog extends StatefulWidget {
+  final String ngoId;
   final String donationId;
 
-  const ReviewDialog({
+  const DonorReviewDialog({
     super.key,
-    required this.donorId,
+    required this.ngoId,
     required this.donationId,
   });
 
   @override
-  State<ReviewDialog> createState() => _ReviewDialogState();
+  State<DonorReviewDialog> createState() =>
+      _DonorReviewDialogState();
 }
 
-class _ReviewDialogState extends State<ReviewDialog> {
+class _DonorReviewDialogState
+    extends State<DonorReviewDialog> {
   int rating = 5;
   final reviewCtrl = TextEditingController();
 
@@ -27,13 +29,12 @@ await FirebaseFirestore.instance
     .collection('reviews')
     .doc(widget.donationId)
     .set({
-      'reviewType': 'ngo_to_donor',
+      'reviewType': 'donor_to_ngo',
 
-      'reviewerId': ngoId,
-      'reviewerRole': 'ngo',
+'reviewerRole': 'donor',
 
-      'targetId': widget.donorId,
-      'targetRole': 'donor',
+'targetId': widget.ngoId,
+'targetRole': 'ngo',
 
       'donationId': widget.donationId,
 
@@ -46,9 +47,9 @@ await FirebaseFirestore.instance
     .collection('donations')
     .doc(widget.donationId)
     .update({
-      'reviewSubmitted': true,
-      'reviewRating': rating,
-    });
+  'donorReviewSubmitted': true,
+  'donorReviewRating': rating,
+});
 
     Navigator.pop(context);
 
@@ -60,7 +61,7 @@ await FirebaseFirestore.instance
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text("Rate Donor"),
+      title: const Text("Rate NGO"),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
