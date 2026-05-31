@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+
 class ReviewDialog extends StatefulWidget {
   final String donorId;
   final String donationId;
@@ -20,35 +21,31 @@ class _ReviewDialogState extends State<ReviewDialog> {
   final reviewCtrl = TextEditingController();
 
   Future<void> submitReview() async {
-    final ngoId =
-    FirebaseAuth.instance.currentUser!.uid;
+    final ngoId = FirebaseAuth.instance.currentUser!.uid;
 
-await FirebaseFirestore.instance
-    .collection('reviews')
-    .doc(widget.donationId)
-    .set({
-      'reviewType': 'ngo_to_donor',
+    await FirebaseFirestore.instance
+        .collection('reviews')
+        .doc(widget.donationId)
+        .set({
+          'reviewType': 'ngo_to_donor',
 
-      'reviewerId': ngoId,
-      'reviewerRole': 'ngo',
+          'reviewerId': ngoId,
+          'reviewerRole': 'ngo',
 
-      'targetId': widget.donorId,
-      'targetRole': 'donor',
+          'targetId': widget.donorId,
+          'targetRole': 'donor',
 
-      'donationId': widget.donationId,
+          'donationId': widget.donationId,
 
-      'rating': rating,
-      'review': reviewCtrl.text.trim(),
+          'rating': rating,
+          'review': reviewCtrl.text.trim(),
 
-      'createdAt': Timestamp.now(),
-    });
-        await FirebaseFirestore.instance
-    .collection('donations')
-    .doc(widget.donationId)
-    .update({
-      'reviewSubmitted': true,
-      'reviewRating': rating,
-    });
+          'createdAt': Timestamp.now(),
+        });
+    await FirebaseFirestore.instance
+        .collection('donations')
+        .doc(widget.donationId)
+        .update({'reviewSubmitted': true, 'reviewRating': rating});
 
     Navigator.pop(context);
 
@@ -64,24 +61,25 @@ await FirebaseFirestore.instance
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 4,
             children: List.generate(
               5,
-              (index) => IconButton(
-                onPressed: () {
+              (index) => GestureDetector(
+                onTap: () {
                   setState(() {
                     rating = index + 1;
                   });
                 },
-                icon: Icon(
+                child: Icon(
                   index < rating ? Icons.star : Icons.star_border,
                   color: Colors.amber,
+                  size: 30,
                 ),
               ),
             ),
           ),
-
           TextField(
             controller: reviewCtrl,
             decoration: const InputDecoration(hintText: "Write review"),

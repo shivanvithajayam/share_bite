@@ -9,6 +9,7 @@ import '../profile/profile_screen.dart';
 import '../profile/edit_profile_sheet.dart';
 import 'live_tracking_screen.dart';
 import 'donor_review_dialog.dart';
+
 class DonorHomeScreen extends StatefulWidget {
   const DonorHomeScreen({super.key});
 
@@ -47,6 +48,18 @@ class _DonorHomeScreenState extends State<DonorHomeScreen> {
             backgroundColor: AppColors.teal,
             flexibleSpace: FlexibleSpaceBar(
               background: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Color(0xFF0F6E56), // dark teal
+                      Color(0xFF1D9E75), // mid teal
+                      Color(0xFF5DCAA5), // light teal
+                    ],
+                    stops: [0.0, 0.6, 1.0],
+                  ),
+                ),
                 padding: const EdgeInsets.fromLTRB(24, 60, 24, 20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -291,137 +304,95 @@ class _DonorHomeScreenState extends State<DonorHomeScreen> {
                     .toList();
 
                 final activeDonations = donations.where((d) {
+                  return d.status == 'accepted' ||
+                      d.status == 'pickup_started' ||
+                      d.status == 'arrived';
+                }).toList();
 
-  return d.status == 'accepted' ||
-         d.status == 'pickup_started' ||
-         d.status == 'arrived' ||
+                final normalDonations = donations.where((d) {
+                  return d.status == 'pending';
+                }).toList();
 
-         (d.status == 'completed' &&
-          !d.donorAcknowledged);
+                final pastDonations = donations.where((d) {
+                  return (d.status == 'completed' || d.status == 'rejected');
+                }).toList();
 
-}).toList();
+                final displayList = showToday
+                    ? [...activeDonations, ...normalDonations]
+                    : pastDonations;
 
-        final normalDonations = donations.where((d) {
+                if (displayList.isEmpty) {
+                  return Center(
+                    child: Text(
+                      showToday ? 'No active donations' : 'No past donations',
+                    ),
+                  );
+                }
 
-          return d.status == 'pending';
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
 
-        }).toList();
+                  children: [
+                    /// ACTIVE PICKUPS
+                    if (showToday && activeDonations.isNotEmpty) ...[
+                      const Padding(
+                        padding: EdgeInsets.fromLTRB(20, 0, 20, 12),
 
-       final pastDonations = donations.where((d) {
+                        child: Text(
+                          "🚚 Active Pickup",
 
-  return
-      (d.status == 'completed' &&
-       d.donorAcknowledged) ||
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
 
-      d.status == 'rejected';
+                      ...activeDonations.map(
+                        (donation) => Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
 
-}).toList();
+                          child: _DonationCard(donation: donation),
+                        ),
+                      ),
+                    ],
 
-                final displayList =
-    showToday
-        ? [...activeDonations, ...normalDonations]
-        : pastDonations;
+                    /// OTHER DONATIONS
+                    if (showToday && normalDonations.isNotEmpty) ...[
+                      const Padding(
+                        padding: EdgeInsets.fromLTRB(20, 8, 20, 12),
 
-if (displayList.isEmpty) {
+                        child: Text(
+                          "🍱 Available Donations",
 
-  return Center(
-    child: Text(
-      showToday
-          ? 'No active donations'
-          : 'No past donations',
-    ),
-  );
-}
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
 
-return Column(
-  crossAxisAlignment: CrossAxisAlignment.start,
+                      ...normalDonations.map(
+                        (donation) => Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
 
-  children: [
+                          child: _DonationCard(donation: donation),
+                        ),
+                      ),
+                    ],
 
-    /// ACTIVE PICKUPS
-    if (showToday && activeDonations.isNotEmpty) ...[
+                    /// PAST DONATIONS
+                    if (!showToday) ...[
+                      ...pastDonations.map(
+                        (donation) => Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
 
-      const Padding(
-        padding: EdgeInsets.fromLTRB(20, 0, 20, 12),
-
-        child: Text(
-          "🚚 Active Pickup",
-
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-
-      ...activeDonations.map(
-        (donation) => Padding(
-          padding: const EdgeInsets.fromLTRB(
-            20,
-            0,
-            20,
-            12,
-          ),
-
-          child: _DonationCard(
-            donation: donation,
-          ),
-        ),
-      ),
-    ],
-
-    /// OTHER DONATIONS
-    if (showToday && normalDonations.isNotEmpty) ...[
-
-      const Padding(
-        padding: EdgeInsets.fromLTRB(20, 8, 20, 12),
-
-        child: Text(
-          "🍱 Available Donations",
-
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-
-      ...normalDonations.map(
-        (donation) => Padding(
-          padding: const EdgeInsets.fromLTRB(
-            20,
-            0,
-            20,
-            12,
-          ),
-
-          child: _DonationCard(
-            donation: donation,
-          ),
-        ),
-      ),
-    ],
-
-    /// PAST DONATIONS
-    if (!showToday) ...[
-
-      ...pastDonations.map(
-        (donation) => Padding(
-          padding: const EdgeInsets.fromLTRB(
-            20,
-            0,
-            20,
-            12,
-          ),
-
-          child: _DonationCard(
-            donation: donation,
-          ),
-        ),
-      ),
-    ],
-  ],
-);
+                          child: _DonationCard(donation: donation),
+                        ),
+                      ),
+                    ],
+                  ],
+                );
               },
             ),
           ),
@@ -434,23 +405,17 @@ return Column(
 class _DonationCard extends StatefulWidget {
   final DonationModel donation;
 
-  const _DonationCard({
-    required this.donation,
-  });
+  const _DonationCard({required this.donation});
 
   @override
-  State<_DonationCard> createState() =>
-      _DonationCardState();
+  State<_DonationCard> createState() => _DonationCardState();
 }
 
-class _DonationCardState
-    extends State<_DonationCard> {
-
+class _DonationCardState extends State<_DonationCard> {
   bool expanded = false;
 
   @override
   Widget build(BuildContext context) {
-
     final donation = widget.donation;
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -460,8 +425,6 @@ class _DonationCardState
         border: Border.all(color: AppColors.sand),
       ),
       child: ExpansionTile(
-
-  
         key: PageStorageKey(donation.id), // ✅ IMPORTANT
         tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
@@ -489,267 +452,241 @@ class _DonationCardState
             ),
             const SizedBox(width: 14),
 
-           Expanded(
-  child: Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    donation.foodName,
 
-      Text(
-  donation.foodName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
 
-  maxLines: 1,
-  overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
+                  ),
 
-  style: const TextStyle(
-    fontWeight: FontWeight.bold,
-    fontSize: 15,
-  ),
-),
+                  const SizedBox(height: 4),
 
-      const SizedBox(height: 4),
+                  if (donation.ngoName != null)
+                    Text(
+                      donation.ngoName!,
 
-      if (donation.ngoName != null)
-
-  Text(
-    donation.ngoName!,
-
-    style: const TextStyle(
-      fontSize: 12,
-      color: Colors.grey,
-      fontWeight: FontWeight.w500,
-    ),
-  ),
-    ],
-  ),
-),
-Container(
-  padding: const EdgeInsets.symmetric(
-    horizontal: 8,
-    vertical: 5,
-  ),
-
-  decoration: BoxDecoration(
-    color: AppColors.blush,
-    borderRadius: BorderRadius.circular(20),
-  ),
-
-  child: Text(
-    donation.status.toUpperCase(),
-
-    style: const TextStyle(
-      fontSize: 9,
-      fontWeight: FontWeight.w700,
-    ),
-  ),
-),
-
-
-const SizedBox(width: 4),
-
-if (donation.status == 'accepted' &&
-    !donation.pickupStarted)
-
-  Container(
-    padding: const EdgeInsets.symmetric(
-      horizontal: 10,
-      vertical: 7,
-    ),
-
-    decoration: BoxDecoration(
-      color: Colors.orangeAccent,
-      borderRadius: BorderRadius.circular(10),
-    ),
-
-    child: const Text(
-      "Waiting",
-
-      style: TextStyle(
-        color: Colors.white,
-        fontSize: 11,
-        fontWeight: FontWeight.w600,
-      ),
-    ),
-  ),
-
-if (donation.pickupStarted &&
-    donation.status != 'completed')
-
-  SizedBox(
-    height: 30,
-
-    child: ElevatedButton(
-      onPressed: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => LiveTrackingScreen(
-              donationId: donation.id,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                ],
+              ),
             ),
-          ),
-        );
-      },
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 5,
+                  ),
 
-      child: const Text(
-        "Track",
-        style: TextStyle(fontSize: 10),
-      ),
-    ),
-  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.blush,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
 
-if (donation.status == 'completed' &&
-    donation.donorAcknowledged &&
-    !donation.donorReviewSubmitted)
+                  child: Text(
+                    donation.status.toUpperCase(),
 
-  SizedBox(
-    height: 30,
+                    style: const TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
 
-    child: ElevatedButton(
-      style: ElevatedButton.styleFrom(
-  backgroundColor: Colors.amber,
-  padding: const EdgeInsets.symmetric(
-    horizontal: 12,
-  ),
-),
+                const SizedBox(height: 6),
 
-      onPressed: () {
-        showDialog(
-          context: context,
-          builder: (_) => DonorReviewDialog(
-            ngoId: donation.acceptedByNgoId!,
-            donationId: donation.id,
-          ),
-        );
-      },
+                if (donation.status == 'accepted' && !donation.pickupStarted)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 7,
+                    ),
 
-      child: const Text(
-  "⭐ Review",
-  style: TextStyle(
-    fontSize: 11,
-    color: Colors.black,
-    fontWeight: FontWeight.w600,
-  ),
-),
-    ),
-  ),
+                    decoration: BoxDecoration(
+                      color: Colors.orangeAccent,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
 
-if (donation.status == 'completed' &&
-    donation.donorReviewSubmitted)
+                    child: const Text(
+                      "Waiting",
 
-  Row(
-    mainAxisSize: MainAxisSize.min,
-    children: List.generate(
-      5,
-      (index) => Icon(
-        index < (donation.donorReviewRating ?? 0)
-            ? Icons.star
-            : Icons.star_border,
-        color: Colors.amber,
-        size: 16,
-      ),
-    ),
-  ),
-            
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+
+                if (donation.pickupStarted && donation.status != 'completed')
+                  SizedBox(
+                    height: 30,
+
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        backgroundColor: Colors.green,
+
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 5,
+                        ),
+                      ),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                LiveTrackingScreen(donationId: donation.id),
+                          ),
+                        );
+                      },
+
+                      child: const Text(
+                        "Track NGO",
+                        style: TextStyle(fontSize: 10, color: Colors.black),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+
+            if (donation.status == 'completed' &&
+                donation.donorAcknowledged &&
+                !donation.donorReviewSubmitted)
+              SizedBox(
+                height: 30,
+
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.amber,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                  ),
+
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (_) => DonorReviewDialog(
+                        ngoId: donation.acceptedByNgoId!,
+                        donationId: donation.id,
+                      ),
+                    );
+                  },
+
+                  child: const Text(
+                    "⭐ Review",
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.black,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+
+            if (donation.status == 'completed' && donation.donorReviewSubmitted)
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: List.generate(
+                  5,
+                  (index) => Icon(
+                    index < (donation.donorReviewRating ?? 0)
+                        ? Icons.star
+                        : Icons.star_border,
+                    color: Colors.amber,
+                    size: 16,
+                  ),
+                ),
+              ),
           ],
         ),
 
         children: [
+          const SizedBox(height: 10),
 
-  const SizedBox(height: 10),
+          _infoRow("🍱 Food", donation.foodName),
+          _infoRow("🍽 Quantity", donation.quantity),
+          _infoRow("📍 Address", donation.address),
+          _infoRow("📝 Description", donation.description ?? "No description"),
 
-  _infoRow("🍱 Food", donation.foodName),
-  _infoRow("🍽 Quantity", donation.quantity),
-  _infoRow("📍 Address", donation.address),
-  _infoRow(
-    "📝 Description",
-    donation.description ?? "No description",
-  ),
+          _infoRow("⏰ Expiry", getExpiryText(donation.expiryTime)),
 
-  _infoRow(
-    "⏰ Expiry",
-    getExpiryText(donation.expiryTime),
-  ),
+          _infoRow("📦 Status", donation.status),
 
-  _infoRow("📦 Status", donation.status),
-  /// SHOW OTP
-if (
-    donation.pickupStarted &&
-    donation.pickupOtp != null &&
-    donation.status != 'completed') ...[
+          /// SHOW OTP
+          if (donation.pickupStarted &&
+              donation.pickupOtp != null &&
+              donation.status != 'completed') ...[
+            const SizedBox(height: 14),
 
-  const SizedBox(height: 14),
+            Container(
+              width: double.infinity,
 
-  Container(
-    width: double.infinity,
+              padding: const EdgeInsets.all(16),
 
-    padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.mint,
 
-    decoration: BoxDecoration(
-      color: AppColors.mint,
+                borderRadius: BorderRadius.circular(16),
+              ),
 
-      borderRadius:
-          BorderRadius.circular(16),
-    ),
+              child: Column(
+                children: [
+                  const Text(
+                    "Your Pickup OTP",
 
-    child: Column(
-      children: [
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                  ),
 
-        const Text(
-          "Your Pickup OTP",
+                  const SizedBox(height: 10),
 
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight:
-                FontWeight.w600,
-          ),
-        ),
+                  Text(
+                    donation.pickupOtp!,
 
-        const SizedBox(height: 10),
+                    style: const TextStyle(
+                      fontSize: 25,
+                      fontWeight: FontWeight.bold,
 
-        Text(
-          donation.pickupOtp!,
+                      letterSpacing: 6,
+                    ),
+                  ),
 
-          style: const TextStyle(
-            fontSize: 25,
-            fontWeight:
-                FontWeight.bold,
+                  const SizedBox(height: 8),
 
-            letterSpacing: 6,
-          ),
-        ),
+                  const Text(
+                    "Share this OTP with NGO",
 
-        const SizedBox(height: 8),
+                    style: TextStyle(fontSize: 15, color: AppColors.tealDark),
+                  ),
+                ],
+              ),
+            ),
+          ],
 
-        const Text(
-          "Share this OTP with NGO",
+          if (donation.ngoName != null) ...[
+            _infoRow("🤝 Accepted by", donation.ngoName!),
 
-          style: TextStyle(
-            fontSize: 15,
-            color:
-                AppColors.tealDark,
-          ),
-        ),
-      ],
-    ),
-  ),
-],
-
-  if (donation.ngoName != null) ...[
-
-    _infoRow(
-      "🤝 Accepted by",
-      donation.ngoName!,
-    ),
-
-    if (donation.ngoPhone != null)
-
-      _infoRow(
-        "📞 NGO Phone",
-        donation.ngoPhone!,
+            if (donation.ngoPhone != null)
+              _infoRow("📞 NGO Phone", donation.ngoPhone!),
+          ],
+        ],
       ),
-  ],
-],
-
-          ),
     );
   }
 }
