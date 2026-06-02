@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+
 class DonorReviewDialog extends StatefulWidget {
   final String ngoId;
   final String donationId;
@@ -12,44 +13,48 @@ class DonorReviewDialog extends StatefulWidget {
   });
 
   @override
-  State<DonorReviewDialog> createState() =>
-      _DonorReviewDialogState();
+  State<DonorReviewDialog> createState() => _DonorReviewDialogState();
 }
 
-class _DonorReviewDialogState
-    extends State<DonorReviewDialog> {
+class _DonorReviewDialogState extends State<DonorReviewDialog> {
   int rating = 5;
   final reviewCtrl = TextEditingController();
 
   Future<void> submitReview() async {
-    final ngoId =
-    FirebaseAuth.instance.currentUser!.uid;
+    final ngoId = FirebaseAuth.instance.currentUser!.uid;
+    final donorId = FirebaseAuth.instance.currentUser!.uid;
 
-await FirebaseFirestore.instance
-    .collection('reviews')
-    .doc(widget.donationId)
-    .set({
-      'reviewType': 'donor_to_ngo',
+    final donorDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(donorId)
+        .get();
 
-'reviewerRole': 'donor',
+    final donorData = donorDoc.data() ?? {};
+    final donorName = donorData['name'] ?? 'Donor';
 
-'targetId': widget.ngoId,
-'targetRole': 'ngo',
+    await FirebaseFirestore.instance
+        .collection('reviews')
+        .doc(widget.donationId)
+        .set({
+          'reviewType': 'donor_to_ngo',
 
-      'donationId': widget.donationId,
+          'reviewerRole': 'donor',
+          'donorName': donorName,
 
-      'rating': rating,
-      'review': reviewCtrl.text.trim(),
+          'targetId': widget.ngoId,
+          'targetRole': 'ngo',
 
-      'createdAt': Timestamp.now(),
-    });
-        await FirebaseFirestore.instance
-    .collection('donations')
-    .doc(widget.donationId)
-    .update({
-  'donorReviewSubmitted': true,
-  'donorReviewRating': rating,
-});
+          'donationId': widget.donationId,
+
+          'rating': rating,
+          'review': reviewCtrl.text.trim(),
+
+          'createdAt': Timestamp.now(),
+        });
+    await FirebaseFirestore.instance
+        .collection('donations')
+        .doc(widget.donationId)
+        .update({'donorReviewSubmitted': true, 'donorReviewRating': rating});
 
     Navigator.pop(context);
 

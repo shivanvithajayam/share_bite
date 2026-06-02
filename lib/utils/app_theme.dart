@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  static const teal = Color(0xFF97B3AE);
-  static const mint = Color(0xFFD2E0D3);
-  static const blush = Color(0xFFF0DDD6);
-  static const rose = Color(0xFFF2C3B9);
+  static const teal = Color(0xFF0F6E56); // dark green
+  static const mint = Color(0xFFE8F5E9); // light green
+  static const blush = Color(0xFFE8F5E9); // light green
+  static const rose = Color(0xFFDDB2A8);
   static const sand = Color(0xFFD6CBBF);
   static const cream = Color(0xFFF0EEEA);
   static const darkText = Color(0xFF3A3A38);

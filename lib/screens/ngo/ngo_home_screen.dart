@@ -10,6 +10,7 @@ import 'package:geolocator/geolocator.dart';
 import 'review_dialog.dart';
 import 'dart:async';
 import 'ngo_live_tracking_screen.dart';
+import 'donor_reviews_screen.dart';
 
 class NgoHomeScreen extends StatefulWidget {
   const NgoHomeScreen({super.key});
@@ -22,6 +23,39 @@ class _NgoHomeScreenState extends State<NgoHomeScreen> {
   bool showPast = false;
   bool _popupShown = false;
   StreamSubscription<Position>? positionStream;
+  Future<void> fixAllDonorRatings() async {
+    final reviewsSnapshot = await FirebaseFirestore.instance
+        .collection('reviews')
+        .where('targetRole', isEqualTo: 'donor')
+        .get();
+
+    Map<String, List<double>> donorRatings = {};
+
+    for (var doc in reviewsSnapshot.docs) {
+      final data = doc.data();
+
+      final donorId = data['targetId'];
+      final rating = ((data['rating'] ?? 0) as num).toDouble();
+
+      donorRatings.putIfAbsent(donorId, () => []);
+      donorRatings[donorId]!.add(rating);
+    }
+
+    for (var entry in donorRatings.entries) {
+      final donorId = entry.key;
+      final ratings = entry.value;
+
+      final avg = ratings.reduce((a, b) => a + b) / ratings.length;
+
+      await FirebaseFirestore.instance.collection('users').doc(donorId).update({
+        'averageRating': avg,
+        'totalReviews': ratings.length,
+      });
+
+      print("Updated $donorId → ${avg.toStringAsFixed(1)} (${ratings.length})");
+    }
+  }
+
   void _openNgoProfileSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -69,6 +103,7 @@ class _NgoHomeScreenState extends State<NgoHomeScreen> {
   @override
   void initState() {
     super.initState();
+    fixAllDonorRatings();
 
     _checkNgoProfileCompletion();
   }
@@ -149,45 +184,58 @@ class _NgoHomeScreenState extends State<NgoHomeScreen> {
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        showPast = false;
-                      });
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 30,
-                        vertical: 10,
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => setState(() => showPast = false),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        decoration: BoxDecoration(
+                          color: !showPast
+                              ? const Color(0xFF0F6E56)
+                              : const Color(0xFFE8F5E9),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Center(
+                          child: Text(
+                            "Today",
+                            style: TextStyle(
+                              color: !showPast
+                                  ? Colors.white
+                                  : AppColors.darkText,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
                       ),
-                      decoration: BoxDecoration(
-                        color: !showToday ? AppColors.teal : AppColors.blush,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Text("Today"),
                     ),
                   ),
 
                   const SizedBox(width: 10),
 
-                  GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        showPast = true;
-                      });
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 30,
-                        vertical: 10,
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => setState(() => showPast = true),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        decoration: BoxDecoration(
+                          color: showPast
+                              ? const Color(0xFF0F6E56)
+                              : const Color(0xFFE8F5E9),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Center(
+                          child: Text(
+                            "Past",
+                            style: TextStyle(
+                              color: showPast
+                                  ? Colors.white
+                                  : AppColors.darkText,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
                       ),
-                      decoration: BoxDecoration(
-                        color: showPast ? AppColors.mint : Colors.transparent,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Text("Past"),
                     ),
                   ),
                 ],
@@ -261,6 +309,62 @@ class _NgoHomeScreenState extends State<NgoHomeScreen> {
                   return donation.status == 'completed' ||
                       donation.status == 'rejected';
                 }).toList();
+                if (!showPast &&
+                    activeDonations.isEmpty &&
+                    availableDonations.isEmpty) {
+                  return const Padding(
+                    padding: EdgeInsets.only(top: 120),
+                    child: Center(
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.inventory_2_outlined,
+                            size: 70,
+                            color: Colors.grey,
+                          ),
+                          SizedBox(height: 12),
+                          Text(
+                            "No Donations Available",
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          SizedBox(height: 6),
+                          Text(
+                            "Check back later for new donations",
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+                if (showPast && pastDonations.isEmpty) {
+                  return const Padding(
+                    padding: EdgeInsets.only(top: 120),
+                    child: Center(
+                      child: Column(
+                        children: [
+                          Icon(Icons.history, size: 70, color: Colors.grey),
+                          SizedBox(height: 12),
+                          Text(
+                            "No Past Donations",
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          SizedBox(height: 6),
+                          Text(
+                            "Completed donations will appear here",
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
                 return Column(
                   children: [
                     /// TODAY TAB
@@ -274,7 +378,7 @@ class _NgoHomeScreenState extends State<NgoHomeScreen> {
                             alignment: Alignment.centerLeft,
 
                             child: Text(
-                              "🔥 Active Pickups",
+                              " Active Pickups",
 
                               style: TextStyle(
                                 fontSize: 18,
@@ -305,13 +409,10 @@ class _NgoHomeScreenState extends State<NgoHomeScreen> {
                       if (availableDonations.isNotEmpty) ...[
                         const Padding(
                           padding: EdgeInsets.fromLTRB(20, 0, 20, 4),
-
                           child: Align(
                             alignment: Alignment.centerLeft,
-
                             child: Text(
-                              "🍱 Available Donations",
-
+                              " Available Donations",
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
@@ -324,7 +425,6 @@ class _NgoHomeScreenState extends State<NgoHomeScreen> {
                           children: availableDonations.map((donation) {
                             return Padding(
                               padding: const EdgeInsets.fromLTRB(20, 0, 20, 4),
-
                               child: _DonationCard(
                                 donation: donation,
                                 showPast: false,
@@ -333,28 +433,71 @@ class _NgoHomeScreenState extends State<NgoHomeScreen> {
                           }).toList(),
                         ),
                       ],
+
+                      if (activeDonations.isEmpty &&
+                          availableDonations.isEmpty) ...[
+                        const SizedBox(height: 140),
+
+                        Center(
+                          child: Column(
+                            children: const [
+                              Icon(
+                                Icons.inventory_2_outlined,
+                                size: 70,
+                                color: Colors.grey,
+                              ),
+                              SizedBox(height: 12),
+                              Text(
+                                "No Donations Available",
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              SizedBox(height: 6),
+                              Text(
+                                "Check back later for new donations",
+                                style: TextStyle(color: Colors.grey),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ],
 
                     /// PAST TAB
-                    if (showPast)
+                    /// PAST TAB
+                    if (showPast) ...[
+                      const Padding(
+                        padding: EdgeInsets.fromLTRB(20, 0, 20, 4),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            " Past Accepted Donations",
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+
                       ListView.builder(
+                        padding: EdgeInsets.zero,
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
-
                         itemCount: pastDonations.length,
-
                         itemBuilder: (context, index) {
                           return Padding(
-                            padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-
+                            padding: const EdgeInsets.fromLTRB(20, 0, 20, 4),
                             child: _DonationCard(
                               donation: pastDonations[index],
-
                               showPast: true,
                             ),
                           );
                         },
                       ),
+                    ],
                   ],
                 );
               },
@@ -598,6 +741,63 @@ class _DonationCardState extends State<_DonationCard> {
                   ),
 
                   Text(donation.quantity, style: const TextStyle(fontSize: 12)),
+                  FutureBuilder<DocumentSnapshot>(
+                    future: FirebaseFirestore.instance
+                        .collection('users')
+                        .doc(donation.donorId)
+                        .get(),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData ||
+                          snapshot.data == null ||
+                          snapshot.data!.data() == null) {
+                        return const SizedBox();
+                      }
+
+                      final data =
+                          snapshot.data!.data() as Map<String, dynamic>;
+
+                      final rating = ((data['averageRating'] ?? 0) as num)
+                          .toDouble();
+
+                      final reviews = ((data['totalReviews'] ?? 0) as num)
+                          .toInt();
+
+                      return GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  DonorReviewsScreen(donorId: donation.donorId),
+                            ),
+                          );
+                        },
+
+                        child: Row(
+                          children: [
+                            const SizedBox(width: 3),
+
+                            reviews == 0
+                                ? const Text(
+                                    "None",
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.grey,
+                                    ),
+                                  )
+                                : Text(
+                                    "⭐ ${rating.toStringAsFixed(1)}",
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.blue,
+                                    ),
+                                  ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
 
                   SizedBox(
                     height: 16,
@@ -650,21 +850,37 @@ class _DonationCardState extends State<_DonationCard> {
                 /// STATUS CHIP
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
+                    horizontal: 8,
                     vertical: 5,
                   ),
 
                   decoration: BoxDecoration(
-                    color: AppColors.blush,
+                    color: donation.status == 'pending'
+                        ? const Color(0xFFFFF3CD)
+                        : donation.status == 'accepted'
+                        ? const Color(0xFFD6EAF8)
+                        : donation.status == 'pickup_started'
+                        ? const Color(0xFFD5F5E3)
+                        : donation.status == 'completed'
+                        ? const Color(0xFFE5E7E9)
+                        : const Color(0xFFFADBD8),
                     borderRadius: BorderRadius.circular(20),
                   ),
 
                   child: Text(
                     donation.status.toUpperCase(),
-
-                    style: const TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w700,
+                      color: donation.status == 'pending'
+                          ? Colors.orange.shade800
+                          : donation.status == 'accepted'
+                          ? Colors.blue.shade800
+                          : donation.status == 'pickup_started'
+                          ? Colors.green.shade800
+                          : donation.status == 'completed'
+                          ? Colors.black87
+                          : Colors.red.shade800,
                     ),
                   ),
                 ),

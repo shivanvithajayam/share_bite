@@ -9,6 +9,7 @@ import '../profile/profile_screen.dart';
 import '../profile/edit_profile_sheet.dart';
 import 'live_tracking_screen.dart';
 import 'donor_review_dialog.dart';
+import 'ngo_reviews_screen.dart';
 
 class DonorHomeScreen extends StatefulWidget {
   const DonorHomeScreen({super.key});
@@ -31,13 +32,14 @@ class _DonorHomeScreenState extends State<DonorHomeScreen> {
       backgroundColor: AppColors.cream,
 
       floatingActionButton: FloatingActionButton(
+        backgroundColor: const Color(0xFF0F6E56),
         onPressed: () {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const AddDonationScreen()),
           );
         },
-        child: const Icon(Icons.add),
+        child: const Icon(Icons.add, color: Colors.white),
       ),
 
       body: CustomScrollView(
@@ -64,13 +66,41 @@ class _DonorHomeScreenState extends State<DonorHomeScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.end,
-                  children: const [
-                    Text(
-                      'Hi, Donor👋',
-                      style: TextStyle(color: Colors.white, fontSize: 24),
+                  children: [
+                    FutureBuilder<DocumentSnapshot>(
+                      future: FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(FirebaseAuth.instance.currentUser!.uid)
+                          .get(),
+                      builder: (context, snapshot) {
+                        if (!snapshot.hasData) {
+                          return const Text(
+                            'Hi 👋',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 24,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          );
+                        }
+
+                        final data =
+                            snapshot.data!.data() as Map<String, dynamic>;
+
+                        return Text(
+                          'Hi, ${data['name'] ?? 'Donor'} 👋',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 24,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        );
+                      },
                     ),
-                    SizedBox(height: 4),
-                    Text(
+
+                    const SizedBox(height: 4),
+
+                    const Text(
                       'Ready to share some kindness?',
                       style: TextStyle(color: Colors.white70, fontSize: 13),
                     ),
@@ -121,7 +151,7 @@ class _DonorHomeScreenState extends State<DonorHomeScreen> {
                                   children: [
                                     const CircleAvatar(
                                       radius: 38,
-                                      backgroundColor: AppColors.teal,
+                                      backgroundColor: const Color(0xFF0F6E56),
                                       child: Icon(
                                         Icons.person,
                                         color: Colors.white,
@@ -238,7 +268,9 @@ class _DonorHomeScreenState extends State<DonorHomeScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 10),
                         decoration: BoxDecoration(
-                          color: showToday ? AppColors.teal : AppColors.blush,
+                          color: showToday
+                              ? const Color(0xFF0F6E56)
+                              : const Color(0xFFE8F5E9),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Center(
@@ -262,7 +294,9 @@ class _DonorHomeScreenState extends State<DonorHomeScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 10),
                         decoration: BoxDecoration(
-                          color: !showToday ? AppColors.teal : AppColors.blush,
+                          color: !showToday
+                              ? const Color(0xFF0F6E56)
+                              : const Color(0xFFE8F5E9),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Center(
@@ -320,11 +354,34 @@ class _DonorHomeScreenState extends State<DonorHomeScreen> {
                 final displayList = showToday
                     ? [...activeDonations, ...normalDonations]
                     : pastDonations;
-
-                if (displayList.isEmpty) {
-                  return Center(
-                    child: Text(
-                      showToday ? 'No active donations' : 'No past donations',
+                if (showToday &&
+                    activeDonations.isEmpty &&
+                    normalDonations.isEmpty) {
+                  return const Padding(
+                    padding: EdgeInsets.only(top: 120),
+                    child: Center(
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.volunteer_activism_outlined,
+                            size: 70,
+                            color: Colors.grey,
+                          ),
+                          SizedBox(height: 12),
+                          Text(
+                            "No Donations Today",
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          SizedBox(height: 6),
+                          Text(
+                            "Tap + to create a new donation",
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        ],
+                      ),
                     ),
                   );
                 }
@@ -363,8 +420,7 @@ class _DonorHomeScreenState extends State<DonorHomeScreen> {
                         padding: EdgeInsets.fromLTRB(20, 8, 20, 12),
 
                         child: Text(
-                          "🍱 Available Donations",
-
+                          "My Donations",
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -382,11 +438,22 @@ class _DonorHomeScreenState extends State<DonorHomeScreen> {
                     ],
 
                     /// PAST DONATIONS
-                    if (!showToday) ...[
+                    /// PAST DONATIONS
+                    if (!showToday && pastDonations.isNotEmpty) ...[
+                      const Padding(
+                        padding: EdgeInsets.fromLTRB(20, 8, 20, 12),
+                        child: Text(
+                          "Past Donations",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+
                       ...pastDonations.map(
                         (donation) => Padding(
                           padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-
                           child: _DonationCard(donation: donation),
                         ),
                       ),
@@ -436,7 +503,7 @@ class _DonationCardState extends State<_DonationCard> {
               height: 60,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
-                color: AppColors.blush,
+                color: const Color(0xFFE8F5E9),
               ),
               child: donation.imageUrl != null && donation.imageUrl!.isNotEmpty
                   ? ClipRRect(
@@ -470,16 +537,72 @@ class _DonationCardState extends State<_DonationCard> {
 
                   const SizedBox(height: 4),
 
-                  if (donation.ngoName != null)
+                  if (donation.ngoName != null) ...[
                     Text(
                       donation.ngoName!,
-
                       style: const TextStyle(
                         fontSize: 12,
                         color: Colors.grey,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
+
+                    const SizedBox(height: 4),
+
+                    FutureBuilder<DocumentSnapshot>(
+                      future: FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(donation.acceptedByNgoId!)
+                          .get(),
+                      builder: (context, snapshot) {
+                        if (!snapshot.hasData) {
+                          return const SizedBox();
+                        }
+
+                        final data =
+                            snapshot.data!.data() as Map<String, dynamic>? ??
+                            {};
+
+                        final rating = ((data['averageRating'] ?? 0) as num)
+                            .toDouble();
+                        final reviews = ((data['totalReviews'] ?? 0) as num)
+                            .toInt();
+
+                        return GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => NgoReviewsScreen(
+                                  ngoId: donation.acceptedByNgoId!,
+                                ),
+                              ),
+                            );
+                          },
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.star,
+                                color: Colors.amber,
+                                size: 14,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                reviews == 0
+                                    ? "None"
+                                    : "${rating.toStringAsFixed(1)} ($reviews)",
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: rating > 0 ? Colors.blue : Colors.grey,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -493,16 +616,32 @@ class _DonationCardState extends State<_DonationCard> {
                   ),
 
                   decoration: BoxDecoration(
-                    color: AppColors.blush,
+                    color: donation.status == 'pending'
+                        ? const Color(0xFFFFF3CD)
+                        : donation.status == 'accepted'
+                        ? const Color(0xFFD6EAF8)
+                        : donation.status == 'pickup_started'
+                        ? const Color(0xFFD5F5E3)
+                        : donation.status == 'completed'
+                        ? const Color(0xFFE5E7E9)
+                        : const Color(0xFFFADBD8),
                     borderRadius: BorderRadius.circular(20),
                   ),
 
                   child: Text(
                     donation.status.toUpperCase(),
-
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 9,
                       fontWeight: FontWeight.w700,
+                      color: donation.status == 'pending'
+                          ? Colors.orange.shade800
+                          : donation.status == 'accepted'
+                          ? Colors.blue.shade800
+                          : donation.status == 'pickup_started'
+                          ? Colors.green.shade800
+                          : donation.status == 'completed'
+                          ? Colors.black87
+                          : Colors.red.shade800,
                     ),
                   ),
                 ),
@@ -564,56 +703,23 @@ class _DonationCardState extends State<_DonationCard> {
                       ),
                     ),
                   ),
-              ],
-            ),
-
-            if (donation.status == 'completed' &&
-                donation.donorAcknowledged &&
-                !donation.donorReviewSubmitted)
-              SizedBox(
-                height: 30,
-
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.amber,
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                  ),
-
-                  onPressed: () {
-                    showDialog(
-                      context: context,
-                      builder: (_) => DonorReviewDialog(
-                        ngoId: donation.acceptedByNgoId!,
-                        donationId: donation.id,
+                if (donation.status == 'completed' &&
+                    donation.donorReviewSubmitted)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: List.generate(
+                      5,
+                      (index) => Icon(
+                        index < (donation.donorReviewRating ?? 0)
+                            ? Icons.star
+                            : Icons.star_border,
+                        color: Colors.amber,
+                        size: 16,
                       ),
-                    );
-                  },
-
-                  child: const Text(
-                    "⭐ Review",
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.black,
-                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                ),
-              ),
-
-            if (donation.status == 'completed' && donation.donorReviewSubmitted)
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: List.generate(
-                  5,
-                  (index) => Icon(
-                    index < (donation.donorReviewRating ?? 0)
-                        ? Icons.star
-                        : Icons.star_border,
-                    color: Colors.amber,
-                    size: 16,
-                  ),
-                ),
-              ),
+              ],
+            ),
           ],
         ),
 
@@ -641,7 +747,7 @@ class _DonationCardState extends State<_DonationCard> {
               padding: const EdgeInsets.all(16),
 
               decoration: BoxDecoration(
-                color: AppColors.mint,
+                color: const Color(0xFFE8F5E9),
 
                 borderRadius: BorderRadius.circular(16),
               ),
@@ -684,6 +790,33 @@ class _DonationCardState extends State<_DonationCard> {
 
             if (donation.ngoPhone != null)
               _infoRow("📞 NGO Phone", donation.ngoPhone!),
+          ],
+          if (donation.status == 'completed' &&
+              donation.donorAcknowledged &&
+              !donation.donorReviewSubmitted) ...[
+            const SizedBox(height: 12),
+
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.amber,
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (_) => DonorReviewDialog(
+                      ngoId: donation.acceptedByNgoId!,
+                      donationId: donation.id,
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.star),
+                label: const Text("Rate NGO"),
+              ),
+            ),
           ],
         ],
       ),

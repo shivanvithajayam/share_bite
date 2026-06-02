@@ -22,6 +22,13 @@ class _ReviewDialogState extends State<ReviewDialog> {
 
   Future<void> submitReview() async {
     final ngoId = FirebaseAuth.instance.currentUser!.uid;
+    final ngoDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(ngoId)
+        .get();
+
+    final ngoData = ngoDoc.data() ?? {};
+    final ngoName = ngoData['name'] ?? 'NGO';
 
     await FirebaseFirestore.instance
         .collection('reviews')
@@ -31,6 +38,7 @@ class _ReviewDialogState extends State<ReviewDialog> {
 
           'reviewerId': ngoId,
           'reviewerRole': 'ngo',
+          'ngoName': ngoName,
 
           'targetId': widget.donorId,
           'targetRole': 'donor',
@@ -46,6 +54,27 @@ class _ReviewDialogState extends State<ReviewDialog> {
         .collection('donations')
         .doc(widget.donationId)
         .update({'reviewSubmitted': true, 'reviewRating': rating});
+    final donorDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(widget.donorId)
+        .get();
+
+    final data = donorDoc.data() ?? {};
+
+    final oldAverage = ((data['averageRating'] ?? 0) as num).toDouble();
+
+    final totalReviews = ((data['totalReviews'] ?? 0) as num).toInt();
+
+    final newAverage =
+        ((oldAverage * totalReviews) + rating) / (totalReviews + 1);
+
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(widget.donorId)
+        .update({
+          'averageRating': newAverage,
+          'totalReviews': totalReviews + 1,
+        });
 
     Navigator.pop(context);
 
