@@ -56,10 +56,12 @@ class AuthGate extends StatelessWidget {
         }
 
         if (!snapshot.hasData || !snapshot.data!.exists) {
-          return const Scaffold(
-            body: Center(child: Text("User record not found in database")),
-          );
-        }
+  Future.microtask(() async {
+    await FirebaseAuth.instance.signOut();
+  });
+
+  return const LoginScreen();
+}
 
         final data = snapshot.data!.data() as Map<String, dynamic>;
         final role = data['role'];

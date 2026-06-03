@@ -385,6 +385,35 @@ class _DonorHomeScreenState extends State<DonorHomeScreen> {
                     ),
                   );
                 }
+                if (!showToday && pastDonations.isEmpty) {
+  return const Padding(
+    padding: EdgeInsets.only(top: 120),
+    child: Center(
+      child: Column(
+        children: [
+          Icon(
+            Icons.history,
+            size: 70,
+            color: Colors.grey,
+          ),
+          SizedBox(height: 12),
+          Text(
+            "No Past Donations",
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          SizedBox(height: 6),
+          Text(
+            "Completed donations will appear here",
+            style: TextStyle(color: Colors.grey),
+          ),
+        ],
+      ),
+    ),
+  );
+}
 
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

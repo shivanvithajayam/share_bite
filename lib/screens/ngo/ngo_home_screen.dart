@@ -109,8 +109,32 @@ class _NgoHomeScreenState extends State<NgoHomeScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
+
+Widget build(BuildContext context) {
+  final user = FirebaseAuth.instance.currentUser;
+
+  return FutureBuilder<DocumentSnapshot>(
+    future: FirebaseFirestore.instance
+        .collection('users')
+        .doc(user!.uid)
+        .get(),
+    builder: (context, userSnapshot) {
+
+      if (!userSnapshot.hasData) {
+        return const Scaffold(
+          body: Center(
+            child: CircularProgressIndicator(),
+          ),
+        );
+      }
+
+      final userData =
+          userSnapshot.data!.data() as Map<String, dynamic>;
+
+      final ngoCreatedAt =
+          userData['createdAt'] as Timestamp;
+
+      return Scaffold(
       backgroundColor: AppColors.cream,
 
       body: CustomScrollView(
@@ -247,21 +271,27 @@ class _NgoHomeScreenState extends State<NgoHomeScreen> {
           SliverToBoxAdapter(
             child: StreamBuilder<QuerySnapshot>(
               stream: showPast
-                  /// PAST TAB
-                  ? FirebaseFirestore.instance
-                        .collection('donations')
-                        .where(
-                          'acceptedByNgoId',
-                          isEqualTo: FirebaseAuth.instance.currentUser!.uid,
-                        )
-                        .where('status', whereIn: ['completed', 'rejected'])
-                        .orderBy('createdAt', descending: true)
-                        .snapshots()
-                  /// TODAY TAB
-                  : FirebaseFirestore.instance
-                        .collection('donations')
-                        .orderBy('createdAt', descending: true)
-                        .snapshots(),
+    ? FirebaseFirestore.instance
+          .collection('donations')
+          .where(
+            'acceptedByNgoId',
+            isEqualTo: FirebaseAuth.instance.currentUser!.uid,
+          )
+          .where('status', whereIn: ['completed', 'rejected'])
+          .where(
+            'createdAt',
+            isGreaterThanOrEqualTo: ngoCreatedAt,
+          )
+          .orderBy('createdAt', descending: true)
+          .snapshots()
+    : FirebaseFirestore.instance
+          .collection('donations')
+          .where(
+            'createdAt',
+            isGreaterThanOrEqualTo: ngoCreatedAt,
+          )
+          .orderBy('createdAt', descending: true)
+          .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
                   return Center(child: Text(snapshot.error.toString()));
@@ -275,18 +305,7 @@ class _NgoHomeScreenState extends State<NgoHomeScreen> {
 
                 final docs = snapshot.data!.docs;
 
-                if (docs.isEmpty) {
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 120),
-                    child: Center(
-                      child: Text(
-                        showPast
-                            ? "No past donations yet"
-                            : "No donations available right now",
-                      ),
-                    ),
-                  );
-                }
+               
 
                 final donations = docs
                     .map((doc) => DonationModel.fromFirestore(doc))
@@ -504,9 +523,11 @@ class _NgoHomeScreenState extends State<NgoHomeScreen> {
             ),
           ),
         ],
-      ),
+            ),
     );
-  }
+    },
+  );
+}
 }
 
 class _DonationCard extends StatefulWidget {
@@ -778,13 +799,7 @@ class _DonationCardState extends State<_DonationCard> {
                             const SizedBox(width: 3),
 
                             reviews == 0
-                                ? const Text(
-                                    "None",
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      color: Colors.grey,
-                                    ),
-                                  )
+    ? const SizedBox()
                                 : Text(
                                     "⭐ ${rating.toStringAsFixed(1)}",
                                     style: const TextStyle(
