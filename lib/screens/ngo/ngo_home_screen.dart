@@ -574,6 +574,14 @@ class _DonationCardState extends State<_DonationCard> {
           "ngoName": ngoData?['name'] ?? "",
           "ngoPhone": ngoData?['phone'] ?? "",
         });
+        await FirebaseFirestore.instance
+    .collection('notifications')
+    .add({
+  'userId': widget.donation.donorId,
+  'title': 'Donation Accepted',
+  'message': '${ngoData?['name']} accepted your donation',
+  'createdAt': Timestamp.now(),
+});
   }
 
   Future<void> rejectDonation() async {
@@ -667,6 +675,14 @@ class _DonationCardState extends State<_DonationCard> {
 
           'ngoLng': currentPosition.longitude,
         });
+        await FirebaseFirestore.instance
+    .collection('notifications')
+    .add({
+  'userId': widget.donation.donorId,
+  'title': 'Pickup Started',
+  'message': 'NGO is on the way',
+  'createdAt': Timestamp.now(),
+});
 
     setState(() {
       pickupStartedLocal = true;

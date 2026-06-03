@@ -407,6 +407,14 @@ await FirebaseFirestore
 
       'donorAcknowledged': false,
     });
+    await FirebaseFirestore.instance
+    .collection('notifications')
+    .add({
+  'userId': data['donorId'],
+  'title': 'Donation Completed',
+  'message': 'Food pickup completed successfully',
+  'createdAt': Timestamp.now(),
+});
 
 if (!context.mounted) return;
 
@@ -507,6 +515,14 @@ else if (
 
               'otpVerified': false,
             });
+            await FirebaseFirestore.instance
+    .collection('notifications')
+    .add({
+  'userId': data['donorId'],
+  'title': 'NGO Arrived',
+  'message': 'NGO has arrived at your location',
+  'createdAt': Timestamp.now(),
+});
       },
 
       style:

@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 import '../../utils/app_theme.dart';
 import '../donor/donor_home_screen.dart';
 import '../ngo/ngo_home_screen.dart';
-
+import 'package:flutter/services.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
 
@@ -31,20 +32,54 @@ class _SignupScreenState extends State<SignupScreen> {
     _ngoRegCtrl.dispose();
     super.dispose();
   }
+Future<void> _signup() async {
+  if (_nameCtrl.text.trim().isEmpty) {
+    _snack('Please enter your name');
+    return;
+  }
 
-  Future<void> _signup() async {
-    if (_nameCtrl.text.isEmpty ||
-        _emailCtrl.text.isEmpty ||
-        _passCtrl.text.isEmpty ||
-        _phoneCtrl.text.isEmpty) {
-      _snack('Please fill all fields');
-      return;
-    }
+  if (_emailCtrl.text.trim().isEmpty) {
+    _snack('Please enter your email');
+    return;
+  }
 
-    if (_passCtrl.text.length < 6) {
-      _snack('Password must be at least 6 characters');
-      return;
-    }
+  final email = _emailCtrl.text.trim();
+
+  final emailRegex = RegExp(
+    r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+  );
+
+  if (!emailRegex.hasMatch(email)) {
+    _snack('Please enter a valid email address');
+    return;
+  }
+
+  if (_phoneCtrl.text.trim().isEmpty) {
+    _snack('Please enter your phone number');
+    return;
+  }
+
+  if (_phoneCtrl.text.trim().length != 10) {
+    _snack('Phone number must be exactly 10 digits');
+    return;
+  }
+
+  if (_passCtrl.text.isEmpty) {
+    _snack('Please enter a password');
+    return;
+  }
+
+  if (_passCtrl.text.length < 6) {
+    _snack('Password must be at least 6 characters');
+    return;
+  }
+
+  if (_role == 'ngo' && _ngoRegCtrl.text.trim().isEmpty) {
+    _snack('Please enter NGO Registration ID');
+    return;
+  }
+
+
 
     try {
       setState(() => _loading = true);
@@ -57,10 +92,15 @@ class _SignupScreenState extends State<SignupScreen> {
           );
 
       String uid = userCredential.user!.uid;
+      String? fcmToken =
+    await FirebaseMessaging.instance.getToken();
+
+print("FCM TOKEN: $fcmToken");
 
       // Store extra data in Firestore
       await FirebaseFirestore.instance.collection('users').doc(uid).set({
         "name": _nameCtrl.text.trim(),
+        "fcmToken": fcmToken,
         "email": _emailCtrl.text.trim(),
         "phone": _phoneCtrl.text.trim(),
         "role": _role,
@@ -87,11 +127,31 @@ class _SignupScreenState extends State<SignupScreen> {
           (_) => false,
         );
       }
-    } catch (e) {
-      setState(() => _loading = false);
-      _snack(e.toString());
+    }catch (e) {
+  setState(() => _loading = false);
+
+  if (e is FirebaseAuthException) {
+    switch (e.code) {
+      case 'email-already-in-use':
+        _snack('This email is already registered');
+        break;
+
+      case 'invalid-email':
+        _snack('Invalid email address');
+        break;
+
+      case 'weak-password':
+        _snack('Password is too weak');
+        break;
+
+      default:
+        _snack(e.message ?? 'Signup failed');
     }
+  } else {
+    _snack('Something went wrong');
   }
+
+  }}
 
   void _snack(String msg) =>
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
@@ -341,10 +401,18 @@ class _SignupScreenState extends State<SignupScreen> {
         ),
         const SizedBox(height: 6),
         TextField(
-          controller: ctrl,
-          obscureText: obscure,
-          keyboardType: keyboardType,
-          decoration: InputDecoration(
+  controller: ctrl,
+  obscureText: obscure,
+  keyboardType: keyboardType,
+  maxLength: label == 'Phone number' ? 10 : null,
+  inputFormatters: label == 'Phone number'
+      ? [
+          FilteringTextInputFormatter.digitsOnly,
+          LengthLimitingTextInputFormatter(10),
+        ]
+      : null,
+  decoration: InputDecoration(
+    counterText: '',
             hintText: hint,
             prefixIcon: Icon(icon, size: 18, color: AppColors.mutedText),
             suffixIcon: suffix,
