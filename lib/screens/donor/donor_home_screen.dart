@@ -386,34 +386,30 @@ class _DonorHomeScreenState extends State<DonorHomeScreen> {
                   );
                 }
                 if (!showToday && pastDonations.isEmpty) {
-  return const Padding(
-    padding: EdgeInsets.only(top: 120),
-    child: Center(
-      child: Column(
-        children: [
-          Icon(
-            Icons.history,
-            size: 70,
-            color: Colors.grey,
-          ),
-          SizedBox(height: 12),
-          Text(
-            "No Past Donations",
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          SizedBox(height: 6),
-          Text(
-            "Completed donations will appear here",
-            style: TextStyle(color: Colors.grey),
-          ),
-        ],
-      ),
-    ),
-  );
-}
+                  return const Padding(
+                    padding: EdgeInsets.only(top: 120),
+                    child: Center(
+                      child: Column(
+                        children: [
+                          Icon(Icons.history, size: 70, color: Colors.grey),
+                          SizedBox(height: 12),
+                          Text(
+                            "No Past Donations",
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          SizedBox(height: 6),
+                          Text(
+                            "Completed donations will appear here",
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
 
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -578,11 +574,11 @@ class _DonationCardState extends State<_DonationCard> {
 
                     const SizedBox(height: 4),
 
-                    FutureBuilder<DocumentSnapshot>(
-                      future: FirebaseFirestore.instance
+                    StreamBuilder<DocumentSnapshot>(
+                      stream: FirebaseFirestore.instance
                           .collection('users')
                           .doc(donation.acceptedByNgoId!)
-                          .get(),
+                          .snapshots(),
                       builder: (context, snapshot) {
                         if (!snapshot.hasData) {
                           return const SizedBox();
@@ -594,6 +590,7 @@ class _DonationCardState extends State<_DonationCard> {
 
                         final rating = ((data['averageRating'] ?? 0) as num)
                             .toDouble();
+
                         final reviews = ((data['totalReviews'] ?? 0) as num)
                             .toInt();
 
@@ -733,17 +730,57 @@ class _DonationCardState extends State<_DonationCard> {
                     ),
                   ),
                 if (donation.status == 'completed' &&
+                    !donation.donorReviewSubmitted)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: SizedBox(
+                      height: 30,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.amber,
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                        ),
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (_) => DonorReviewDialog(
+                              ngoId: donation.acceptedByNgoId!,
+                              donationId: donation.id,
+                            ),
+                          );
+                        },
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.star, size: 12, color: Colors.black),
+                            SizedBox(width: 3),
+                            Text(
+                              "Review",
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                if (donation.status == 'completed' &&
                     donation.donorReviewSubmitted)
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: List.generate(
-                      5,
-                      (index) => Icon(
-                        index < (donation.donorReviewRating ?? 0)
-                            ? Icons.star
-                            : Icons.star_border,
-                        color: Colors.amber,
-                        size: 16,
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: List.generate(
+                        5,
+                        (index) => Icon(
+                          index < (donation.donorReviewRating ?? 0)
+                              ? Icons.star
+                              : Icons.star_border,
+                          color: Colors.amber,
+                          size: 16,
+                        ),
                       ),
                     ),
                   ),
@@ -821,7 +858,6 @@ class _DonationCardState extends State<_DonationCard> {
               _infoRow("📞 NGO Phone", donation.ngoPhone!),
           ],
           if (donation.status == 'completed' &&
-              donation.donorAcknowledged &&
               !donation.donorReviewSubmitted) ...[
             const SizedBox(height: 12),
 

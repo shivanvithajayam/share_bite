@@ -15,9 +15,12 @@ class NgoReviewsScreen extends StatelessWidget {
             .collection('reviews')
             .where('targetId', isEqualTo: ngoId)
             .where('targetRole', isEqualTo: 'ngo')
-            .orderBy('createdAt', descending: true)
             .snapshots(),
         builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return Center(child: Text(snapshot.error.toString()));
+          }
+
           if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
