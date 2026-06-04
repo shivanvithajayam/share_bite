@@ -3,7 +3,8 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:math';
-
+import 'package:url_launcher/url_launcher.dart';
+import '../../utils/app_theme.dart';
 class LiveTrackingScreen extends StatelessWidget {
   final String donationId;
 
@@ -46,10 +47,39 @@ Widget build(BuildContext context) {
   return Scaffold(
 
     appBar: AppBar(
-      title: const Text(
-        "Track NGO",
-      ),
+  title: const Text("Track NGO"),
+  backgroundColor: AppColors.teal,
+
+  actions: [
+    IconButton(
+      icon: const Icon(Icons.call),
+
+      onPressed: () async {
+
+        final doc = await FirebaseFirestore.instance
+            .collection('donations')
+            .doc(donationId)
+            .get();
+
+        final data =
+            doc.data() as Map<String, dynamic>;
+
+        final ngoPhone =
+    data['ngoPhone'] ?? '';
+
+print("NGO PHONE = $ngoPhone");
+
+final Uri phoneUri =
+    Uri.parse('tel:$ngoPhone');
+
+await launchUrl(
+  phoneUri,
+  mode: LaunchMode.externalApplication,
+);
+      },
     ),
+  ],
+),
 
     body: StreamBuilder<DocumentSnapshot>(
       stream: FirebaseFirestore.instance

@@ -277,7 +277,7 @@ Widget build(BuildContext context) {
             'acceptedByNgoId',
             isEqualTo: FirebaseAuth.instance.currentUser!.uid,
           )
-          .where('status', whereIn: ['completed', 'rejected'])
+          .where('status', isEqualTo: 'completed')
           .where(
             'createdAt',
             isGreaterThanOrEqualTo: ngoCreatedAt,
@@ -325,9 +325,8 @@ Widget build(BuildContext context) {
 
                 /// PAST DONATIONS
                 final pastDonations = donations.where((donation) {
-                  return donation.status == 'completed' ||
-                      donation.status == 'rejected';
-                }).toList();
+  return donation.status == 'completed';
+}).toList();
                 if (!showPast &&
                     activeDonations.isEmpty &&
                     availableDonations.isEmpty) {
@@ -579,8 +578,10 @@ class _DonationCardState extends State<_DonationCard> {
     .add({
   'userId': widget.donation.donorId,
   'title': 'Donation Accepted',
-  'message': '${ngoData?['name']} accepted your donation',
+  'message':
+      '${ngoData?['name']} has accepted your ${widget.donation.foodName} donation',
   'createdAt': Timestamp.now(),
+  'isRead': false,
 });
   }
 
@@ -663,25 +664,22 @@ class _DonationCardState extends State<_DonationCard> {
     Position currentPosition = await Geolocator.getCurrentPosition();
 
     /// SAVE INITIAL LOCATION
+final ngoDoc = await FirebaseFirestore.instance
+    .collection('users')
+    .doc(FirebaseAuth.instance.currentUser!.uid)
+    .get();
 
-    await FirebaseFirestore.instance
-        .collection('donations')
-        .doc(widget.donation.id)
-        .update({
-          'pickupStarted': true,
-          'status': 'pickup_started',
+final ngoName = ngoDoc.data()?['name'] ?? 'NGO';
 
-          'ngoLat': currentPosition.latitude,
-
-          'ngoLng': currentPosition.longitude,
-        });
-        await FirebaseFirestore.instance
+await FirebaseFirestore.instance
     .collection('notifications')
     .add({
   'userId': widget.donation.donorId,
   'title': 'Pickup Started',
-  'message': 'NGO is on the way',
+  'message':
+      '$ngoName is on the way to collect your ${widget.donation.foodName}',
   'createdAt': Timestamp.now(),
+  'isRead': false,
 });
 
     setState(() {

@@ -32,8 +32,9 @@ void listenForNotifications() {
   final uid = FirebaseAuth.instance.currentUser!.uid;
 
   FirebaseFirestore.instance
-      .collection('notifications')
-      .where('userId', isEqualTo: uid)
+    .collection('notifications')
+    .where('userId', isEqualTo: uid)
+    .where('isRead', isEqualTo: false)
       .snapshots()
       .listen((snapshot) {
     for (final doc in snapshot.docs) {
@@ -55,6 +56,9 @@ void listenForNotifications() {
             ),
           ),
         );
+        doc.reference.update({
+  'isRead': true,
+});
       }
     }
   });

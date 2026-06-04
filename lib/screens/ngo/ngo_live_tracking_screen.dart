@@ -4,7 +4,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../utils/app_theme.dart';
 import 'dart:math';
-
+import 'package:url_launcher/url_launcher.dart';
 class NgoLiveTrackingScreen extends StatefulWidget {
   final String donationId;
 
@@ -61,12 +61,42 @@ class _NgoLiveTrackingScreenState
       backgroundColor: AppColors.cream,
 
       appBar: AppBar(
-        title: const Text(
-          "Navigate to Donor",
-        ),
+  title: const Text(
+    "Navigate to Donor",
+  ),
 
-        backgroundColor: AppColors.teal,
-      ),
+  backgroundColor: AppColors.teal,
+
+  actions: [
+    IconButton(
+      icon: const Icon(Icons.call),
+
+      onPressed: () async {
+
+        final doc = await FirebaseFirestore.instance
+            .collection('donations')
+            .doc(widget.donationId)
+            .get();
+
+        final data =
+            doc.data() as Map<String, dynamic>;
+
+       final donorPhone =
+    data['donorPhone'] ?? '';
+
+print("DONOR PHONE = $donorPhone");
+
+final Uri phoneUri =
+    Uri.parse('tel:$donorPhone');
+
+await launchUrl(
+  phoneUri,
+  mode: LaunchMode.externalApplication,
+);
+      },
+    ),
+  ],
+),
 
       body: StreamBuilder<DocumentSnapshot>(
         stream: FirebaseFirestore.instance
@@ -407,13 +437,15 @@ await FirebaseFirestore
 
       'donorAcknowledged': false,
     });
-    await FirebaseFirestore.instance
+await FirebaseFirestore.instance
     .collection('notifications')
     .add({
   'userId': data['donorId'],
   'title': 'Donation Completed',
-  'message': 'Food pickup completed successfully',
+  'message':
+      '${data['ngoName']} has successfully collected your donation',
   'createdAt': Timestamp.now(),
+  'isRead': false,
 });
 
 if (!context.mounted) return;
@@ -515,13 +547,15 @@ else if (
 
               'otpVerified': false,
             });
-            await FirebaseFirestore.instance
+           await FirebaseFirestore.instance
     .collection('notifications')
     .add({
   'userId': data['donorId'],
   'title': 'NGO Arrived',
-  'message': 'NGO has arrived at your location',
+  'message':
+      '${data['ngoName']} has arrived for pickup',
   'createdAt': Timestamp.now(),
+  'isRead': false,
 });
       },
 

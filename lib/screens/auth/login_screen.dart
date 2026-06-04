@@ -5,7 +5,7 @@ import '../../utils/app_theme.dart';
 import 'signup_screen.dart';
 import '../donor/donor_home_screen.dart';
 import '../ngo/ngo_home_screen.dart';
-
+import 'forgot_password_screen.dart';
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -301,7 +301,15 @@ class _LoginScreenState extends State<LoginScreen>
                     Align(
                       alignment: Alignment.centerRight,
                       child: TextButton(
-                        onPressed: () => _snack('Password reset email sent'),
+                        onPressed: () {
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) =>
+          const ForgotPasswordScreen(),
+    ),
+  );
+},
                         child: Text(
                           'Forgot password?',
                           style: TextStyle(color: btnColor, fontSize: 12),
