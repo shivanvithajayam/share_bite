@@ -30,35 +30,33 @@ class _DonorReviewDialogState extends State<DonorReviewDialog> {
 
     final donorData = donorDoc.data() ?? {};
     final donorName = donorData['name'] ?? 'Donor';
-
-    await FirebaseFirestore.instance
-        .collection('reviews')
-        .doc(widget.donationId)
-        .set({
-          'reviewType': 'donor_to_ngo',
-
-          'reviewerRole': 'donor',
-          'donorName': donorName,
-
-          'targetId': widget.ngoId,
-          'targetRole': 'ngo',
-
-          'donationId': widget.donationId,
-
-          'rating': rating,
-          'review': reviewCtrl.text.trim(),
-
-          'createdAt': Timestamp.now(),
-        });
-    await FirebaseFirestore.instance
-        .collection('donations')
-        .doc(widget.donationId)
-        .update({'donorReviewSubmitted': true, 'donorReviewRating': rating});
-
     final ngoDoc = await FirebaseFirestore.instance
         .collection('users')
         .doc(widget.ngoId)
         .get();
+    final ngoName = ngoDoc.data()?['name'] ?? 'NGO';
+
+    await FirebaseFirestore.instance.collection('reviews').add({
+      'reviewType': 'donor_to_ngo',
+
+      'reviewerRole': 'donor',
+      'donorName': donorName,
+
+      'targetId': widget.ngoId,
+      'targetRole': 'ngo',
+      'targetName': ngoName,
+
+      'donationId': widget.donationId,
+
+      'rating': rating,
+      'review': reviewCtrl.text.trim(),
+
+      'createdAt': Timestamp.now(),
+    });
+    await FirebaseFirestore.instance
+        .collection('donations')
+        .doc(widget.donationId)
+        .update({'donorReviewSubmitted': true, 'donorReviewRating': rating});
 
     final ngoData = ngoDoc.data() ?? {};
 
@@ -94,19 +92,21 @@ class _DonorReviewDialogState extends State<DonorReviewDialog> {
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 4,
             children: List.generate(
               5,
-              (index) => IconButton(
-                onPressed: () {
+              (index) => GestureDetector(
+                onTap: () {
                   setState(() {
                     rating = index + 1;
                   });
                 },
-                icon: Icon(
+                child: Icon(
                   index < rating ? Icons.star : Icons.star_border,
                   color: Colors.amber,
+                  size: 25,
                 ),
               ),
             ),

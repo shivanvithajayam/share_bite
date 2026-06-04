@@ -29,35 +29,37 @@ class _ReviewDialogState extends State<ReviewDialog> {
 
     final ngoData = ngoDoc.data() ?? {};
     final ngoName = ngoData['name'] ?? 'NGO';
-
-    await FirebaseFirestore.instance
-        .collection('reviews')
-        .doc(widget.donationId)
-        .set({
-          'reviewType': 'ngo_to_donor',
-
-          'reviewerId': ngoId,
-          'reviewerRole': 'ngo',
-          'ngoName': ngoName,
-
-          'targetId': widget.donorId,
-          'targetRole': 'donor',
-
-          'donationId': widget.donationId,
-
-          'rating': rating,
-          'review': reviewCtrl.text.trim(),
-
-          'createdAt': Timestamp.now(),
-        });
-    await FirebaseFirestore.instance
-        .collection('donations')
-        .doc(widget.donationId)
-        .update({'reviewSubmitted': true, 'reviewRating': rating});
     final donorDoc = await FirebaseFirestore.instance
         .collection('users')
         .doc(widget.donorId)
         .get();
+
+    final donorName = donorDoc.data()?['name'] ?? 'Donor';
+
+    await FirebaseFirestore.instance.collection('reviews').add({
+      'reviewType': 'ngo_to_donor',
+
+      'reviewerId': ngoId,
+      'reviewerRole': 'ngo',
+      'ngoName': ngoName,
+
+      'targetId': widget.donorId,
+      'targetRole': 'donor',
+      'targetName': donorName,
+
+      'donationId': widget.donationId,
+
+      'rating': rating,
+      'review': reviewCtrl.text.trim(),
+
+      'createdAt': Timestamp.now(),
+    });
+    print("NGO REVIEW SAVED FOR ${widget.donorId}");
+    await FirebaseFirestore.instance
+        .collection('donations')
+        .doc(widget.donationId)
+        .update({'reviewSubmitted': true, 'reviewRating': rating});
+    print("DONATION UPDATED");
 
     final data = donorDoc.data() ?? {};
 
@@ -104,7 +106,7 @@ class _ReviewDialogState extends State<ReviewDialog> {
                 child: Icon(
                   index < rating ? Icons.star : Icons.star_border,
                   color: Colors.amber,
-                  size: 30,
+                  size: 25,
                 ),
               ),
             ),
