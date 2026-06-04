@@ -32,7 +32,6 @@ class _DonorHomeScreenState extends State<DonorHomeScreen> {
   void listenForNotifications() {
     final uid = FirebaseAuth.instance.currentUser!.uid;
 
-<<<<<<< HEAD
   FirebaseFirestore.instance
     .collection('notifications')
     .where('userId', isEqualTo: uid)
@@ -65,37 +64,6 @@ class _DonorHomeScreenState extends State<DonorHomeScreen> {
     }
   });
 }
-=======
-    FirebaseFirestore.instance
-        .collection('notifications')
-        .where('userId', isEqualTo: uid)
-        .snapshots()
-        .listen((snapshot) {
-          for (final doc in snapshot.docs) {
-            if (!shownNotifications.contains(doc.id)) {
-              shownNotifications.add(doc.id);
-
-              final data = doc.data();
-
-              NotificationService.localNotifications.show(
-                DateTime.now().millisecondsSinceEpoch ~/ 1000,
-                data['title'] ?? 'Notification',
-                data['message'] ?? '',
-                const NotificationDetails(
-                  android: AndroidNotificationDetails(
-                    'sharebite_channel',
-                    'ShareBite Notifications',
-                    importance: Importance.max,
-                    priority: Priority.high,
-                  ),
-                ),
-              );
-            }
-          }
-        });
-  }
-
->>>>>>> 349dcb8212b4096f9b6272df9b89f69504eccce7
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
