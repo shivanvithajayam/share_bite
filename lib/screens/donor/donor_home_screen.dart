@@ -899,33 +899,7 @@ class _DonationCardState extends State<_DonationCard> {
 
             if (donation.ngoPhone != null)
               _infoRow("📞 NGO Phone", donation.ngoPhone!),
-          ],
-          if (donation.status == 'completed' &&
-              !donation.donorReviewSubmitted) ...[
-            const SizedBox(height: 12),
-
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.amber,
-                  foregroundColor: Colors.black,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (_) => DonorReviewDialog(
-                      ngoId: donation.acceptedByNgoId!,
-                      donationId: donation.id,
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.star),
-                label: const Text("Rate NGO"),
-              ),
-            ),
-          ],
+          
         ],
       ),
     );

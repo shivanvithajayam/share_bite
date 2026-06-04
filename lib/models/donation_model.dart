@@ -2,10 +2,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class DonationModel {
   final int? donorReviewRating;
-final bool donorReviewSubmitted;
+  final bool donorReviewSubmitted;
   final int? reviewRating;
-final String? reviewComment;
-final bool reviewSubmitted;
+  final String? reviewComment;
+  final bool reviewSubmitted;
   final String id;
   final String donorId;
   final String donorName;
@@ -28,18 +28,17 @@ final bool reviewSubmitted;
   final DateTime? acceptedAt;
   final bool pickupStarted;
   final double? ngoLat;
-final double? ngoLng;
+  final double? ngoLng;
 
-
-final String? pickupOtp;
-final bool otpVerified;
-final bool donorAcknowledged;
+  final String? pickupOtp;
+  final bool otpVerified;
+  final bool donorAcknowledged;
   DonationModel({
     this.reviewRating,
-this.reviewComment,
-this.reviewSubmitted = false,
-this.donorReviewRating,
-this.donorReviewSubmitted = false,
+    this.reviewComment,
+    this.reviewSubmitted = false,
+    this.donorReviewRating,
+    this.donorReviewSubmitted = false,
 
     required this.id,
     required this.donorId,
@@ -56,11 +55,11 @@ this.donorReviewSubmitted = false,
     required this.createdAt,
     required this.pickupStarted,
     this.ngoLat,
-this.ngoLng,
+    this.ngoLng,
 
-this.donorAcknowledged = false,
-this.pickupOtp,
-this.otpVerified = false,
+    this.donorAcknowledged = false,
+    this.pickupOtp,
+    this.otpVerified = false,
     this.imageUrl,
     this.acceptedByNgoId,
     this.acceptedByNgoName,
@@ -68,7 +67,6 @@ this.otpVerified = false,
     this.ngoName,
     this.ngoPhone,
     this.acceptedAt,
-    
   });
 
   // 🔹 Convert Firestore → Model
@@ -76,17 +74,13 @@ this.otpVerified = false,
     final data = doc.data() as Map<String, dynamic>;
 
     return DonationModel(
-      donorReviewRating:
-    data['donorReviewRating'],
+      donorReviewRating: data['donorReviewRating'],
 
-donorReviewSubmitted:
-    data['donorReviewSubmitted'] ?? false,
-      donorAcknowledged:
-    data['donorAcknowledged'] ?? false,
-    reviewRating: data['reviewRating'],
-reviewComment: data['reviewComment'],
-reviewSubmitted:
-    data['reviewSubmitted'] ?? false,
+      donorReviewSubmitted: data['donorReviewSubmitted'] ?? false,
+      donorAcknowledged: data['donorAcknowledged'] ?? false,
+      reviewRating: data['reviewRating'],
+      reviewComment: data['reviewComment'],
+      reviewSubmitted: data['reviewSubmitted'] ?? false,
       id: doc.id,
       donorId: data['donorId'] ?? '',
       donorName: data['donorName'] ?? '',
@@ -110,8 +104,8 @@ reviewSubmitted:
       ngoLat: (data['ngoLat'] as num?)?.toDouble(),
       ngoLng: (data['ngoLng'] as num?)?.toDouble(),
 
-pickupOtp: data['pickupOtp'],
-otpVerified: data['otpVerified'] ?? false,
+      pickupOtp: data['pickupOtp'],
+      otpVerified: data['otpVerified'] ?? false,
       acceptedAt: data['acceptedAt'] != null
           ? (data['acceptedAt'] as Timestamp).toDate()
           : null,
@@ -121,17 +115,14 @@ otpVerified: data['otpVerified'] ?? false,
   // 🔹 Convert Model → Firestore
   Map<String, dynamic> toMap() {
     return {
-      'donorReviewRating':
-    donorReviewRating,
+      'donorReviewRating': donorReviewRating,
 
-'donorReviewSubmitted':
-    donorReviewSubmitted,
-      'donorAcknowledged':
-    donorAcknowledged,
+      'donorReviewSubmitted': donorReviewSubmitted,
+      'donorAcknowledged': donorAcknowledged,
       'donorId': donorId,
       'reviewRating': reviewRating,
-'reviewComment': reviewComment,
-'reviewSubmitted': reviewSubmitted,
+      'reviewComment': reviewComment,
+      'reviewSubmitted': reviewSubmitted,
       'donorName': donorName,
       'donorPhone': donorPhone,
       'foodName': foodName,
@@ -149,11 +140,11 @@ otpVerified: data['otpVerified'] ?? false,
       'acceptedByNgoPhone': acceptedByNgoPhone,
       'acceptedAt': acceptedAt != null ? Timestamp.fromDate(acceptedAt!) : null,
       'pickupStarted': pickupStarted,
-'ngoLat': ngoLat,
-'ngoLng': ngoLng,
+      'ngoLat': ngoLat,
+      'ngoLng': ngoLng,
 
-'pickupOtp': pickupOtp,
-'otpVerified': otpVerified,
+      'pickupOtp': pickupOtp,
+      'otpVerified': otpVerified,
     };
   }
 }
