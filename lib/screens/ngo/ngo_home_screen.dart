@@ -270,6 +270,7 @@ Widget build(BuildContext context) {
           /// DONATION LIST
           SliverToBoxAdapter(
             child: StreamBuilder<QuerySnapshot>(
+              key: ValueKey(showPast),
               stream: showPast
     ? FirebaseFirestore.instance
           .collection('donations')
@@ -662,6 +663,15 @@ class _DonationCardState extends State<_DonationCard> {
     /// immediately show tracking button
     /// GET CURRENT LOCATION FIRST
     Position currentPosition = await Geolocator.getCurrentPosition();
+    await FirebaseFirestore.instance
+    .collection('donations')
+    .doc(widget.donation.id)
+    .update({
+  'status': 'pickup_started',
+  'pickupStarted': true,
+  'ngoLat': currentPosition.latitude,
+  'ngoLng': currentPosition.longitude,
+});
 
     /// SAVE INITIAL LOCATION
 final ngoDoc = await FirebaseFirestore.instance
