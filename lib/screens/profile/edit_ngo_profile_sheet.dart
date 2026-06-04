@@ -10,13 +10,10 @@ class EditNgoProfileSheet extends StatefulWidget {
   const EditNgoProfileSheet({super.key});
 
   @override
-  State<EditNgoProfileSheet> createState() =>
-      _EditNgoProfileSheetState();
+  State<EditNgoProfileSheet> createState() => _EditNgoProfileSheetState();
 }
 
-class _EditNgoProfileSheetState
-    extends State<EditNgoProfileSheet> {
-
+class _EditNgoProfileSheetState extends State<EditNgoProfileSheet> {
   final _nameCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
   final _addressCtrl = TextEditingController();
@@ -59,8 +56,7 @@ class _EditNgoProfileSheetState
     bool serviceEnabled;
     LocationPermission permission;
 
-    serviceEnabled =
-        await Geolocator.isLocationServiceEnabled();
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
 
     if (!serviceEnabled) return;
 
@@ -70,16 +66,14 @@ class _EditNgoProfileSheetState
       permission = await Geolocator.requestPermission();
     }
 
-    Position position =
-        await Geolocator.getCurrentPosition(
+    Position position = await Geolocator.getCurrentPosition(
       desiredAccuracy: LocationAccuracy.high,
     );
 
     _latitude = position.latitude;
     _longitude = position.longitude;
 
-    List<Placemark> placemarks =
-        await placemarkFromCoordinates(
+    List<Placemark> placemarks = await placemarkFromCoordinates(
       _latitude!,
       _longitude!,
     );
@@ -95,154 +89,134 @@ class _EditNgoProfileSheetState
   }
 
   Future<void> saveProfile() async {
-
-    if (_addressCtrl.text.trim().isEmpty ||
+    if (_nameCtrl.text.trim().isEmpty ||
+        _phoneCtrl.text.trim().isEmpty ||
+        _addressCtrl.text.trim().isEmpty ||
         _landmarkCtrl.text.trim().isEmpty) {
-
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            "Please fill all required fields",
-          ),
-        ),
+        const SnackBar(content: Text("Please fill all required fields")),
       );
 
       return;
     }
 
+    if (!RegExp(r'^\d{10}$').hasMatch(_phoneCtrl.text.trim())) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Enter a valid 10 digit phone number")),
+      );
+      return;
+    }
+
     final user = FirebaseAuth.instance.currentUser;
 
-    await FirebaseFirestore.instance
-        .collection('users')
-        .doc(user!.uid)
-        .update({
-
+    await FirebaseFirestore.instance.collection('users').doc(user!.uid).update({
       "name": _nameCtrl.text.trim(),
 
       "phone": _phoneCtrl.text.trim(),
 
-      "address":
-          "${_landmarkCtrl.text.trim()}, ${_addressCtrl.text.trim()}",
+      "address": "${_landmarkCtrl.text.trim()}, ${_addressCtrl.text.trim()}",
 
       "latitude": _latitude,
       "longitude": _longitude,
     });
 
-    Navigator.pop(context);
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text("NGO Profile Updated")));
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("NGO Profile Updated"),
-      ),
-    );
+    Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
-
     if (loading) {
       return const SizedBox(
         height: 300,
-        child: Center(
-          child: CircularProgressIndicator(),
-        ),
+        child: Center(child: CircularProgressIndicator()),
       );
     }
 
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 20,
-        right: 20,
-        top: 20,
-        bottom:
-            MediaQuery.of(context).viewInsets.bottom + 20,
-      ),
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: Padding(
+        padding: EdgeInsets.only(
+          left: 20,
+          right: 20,
+          top: 20,
+          bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+        ),
 
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
 
-          children: [
-
-            const Text(
-              "Complete NGO Profile",
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
+            children: [
+              const Text(
+                "Complete NGO Profile",
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
               ),
-            ),
 
-            const SizedBox(height: 20),
+              const SizedBox(height: 20),
 
-            TextField(
-              controller: _nameCtrl,
-              decoration: const InputDecoration(
-                labelText: "NGO Name",
+              TextField(
+                controller: _nameCtrl,
+                decoration: const InputDecoration(labelText: "NGO Name"),
               ),
-            ),
 
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-            TextField(
-              controller: _phoneCtrl,
-              decoration: const InputDecoration(
-                labelText: "Phone",
+              TextField(
+                controller: _phoneCtrl,
+                decoration: const InputDecoration(labelText: "Phone"),
               ),
-            ),
 
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-            TextField(
-              controller: _addressCtrl,
-              maxLines: 2,
+              TextField(
+                controller: _addressCtrl,
+                maxLines: 2,
 
-              decoration: const InputDecoration(
-                labelText: "Address *",
+                decoration: const InputDecoration(labelText: "Address *"),
               ),
-            ),
 
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-            TextField(
-              controller: _landmarkCtrl,
-              maxLines: 2,
+              TextField(
+                controller: _landmarkCtrl,
+                maxLines: 2,
 
-              decoration: const InputDecoration(
-                labelText:
-                    "Landmark / Building *",
-              ),
-            ),
-
-            const SizedBox(height: 10),
-
-            SizedBox(
-              width: double.infinity,
-
-              child: OutlinedButton.icon(
-                onPressed: _getCurrentLocation,
-
-                icon: const Icon(Icons.my_location),
-
-                label: const Text(
-                  "Use Current Location",
+                decoration: const InputDecoration(
+                  labelText: "Landmark / Building *",
                 ),
               ),
-            ),
 
-            const SizedBox(height: 24),
+              const SizedBox(height: 10),
 
-            SizedBox(
-              width: double.infinity,
+              SizedBox(
+                width: double.infinity,
 
-              child: ElevatedButton(
-                onPressed: saveProfile,
+                child: OutlinedButton.icon(
+                  onPressed: _getCurrentLocation,
 
-                child: const Text(
-                  "Save Changes",
+                  icon: const Icon(Icons.my_location),
+
+                  label: const Text("Use Current Location"),
                 ),
               ),
-            ),
-          ],
+
+              const SizedBox(height: 24),
+
+              SizedBox(
+                width: double.infinity,
+
+                child: ElevatedButton(
+                  onPressed: saveProfile,
+
+                  child: const Text("Save Changes"),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

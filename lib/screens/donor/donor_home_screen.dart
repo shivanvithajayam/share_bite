@@ -12,6 +12,7 @@ import 'donor_review_dialog.dart';
 import 'ngo_reviews_screen.dart';
 import '../../services/notification_service.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+
 class DonorHomeScreen extends StatefulWidget {
   const DonorHomeScreen({super.key});
 
@@ -21,16 +22,17 @@ class DonorHomeScreen extends StatefulWidget {
 
 class _DonorHomeScreenState extends State<DonorHomeScreen> {
   bool showToday = true;
-Set<String> shownNotifications = {};
-@override
-void initState() {
-  super.initState();
-  listenForNotifications();
-}
+  Set<String> shownNotifications = {};
+  @override
+  void initState() {
+    super.initState();
+    listenForNotifications();
+  }
 
-void listenForNotifications() {
-  final uid = FirebaseAuth.instance.currentUser!.uid;
+  void listenForNotifications() {
+    final uid = FirebaseAuth.instance.currentUser!.uid;
 
+<<<<<<< HEAD
   FirebaseFirestore.instance
     .collection('notifications')
     .where('userId', isEqualTo: uid)
@@ -63,6 +65,37 @@ void listenForNotifications() {
     }
   });
 }
+=======
+    FirebaseFirestore.instance
+        .collection('notifications')
+        .where('userId', isEqualTo: uid)
+        .snapshots()
+        .listen((snapshot) {
+          for (final doc in snapshot.docs) {
+            if (!shownNotifications.contains(doc.id)) {
+              shownNotifications.add(doc.id);
+
+              final data = doc.data();
+
+              NotificationService.localNotifications.show(
+                DateTime.now().millisecondsSinceEpoch ~/ 1000,
+                data['title'] ?? 'Notification',
+                data['message'] ?? '',
+                const NotificationDetails(
+                  android: AndroidNotificationDetails(
+                    'sharebite_channel',
+                    'ShareBite Notifications',
+                    importance: Importance.max,
+                    priority: Priority.high,
+                  ),
+                ),
+              );
+            }
+          }
+        });
+  }
+
+>>>>>>> 349dcb8212b4096f9b6272df9b89f69504eccce7
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
@@ -839,12 +872,8 @@ class _DonationCardState extends State<_DonationCard> {
           _infoRow("📍 Address", donation.address),
           _infoRow("📝 Description", donation.description ?? "No description"),
 
-          if (donation.status != 'completed' &&
-    donation.status != 'rejected')
-  _infoRow(
-    "⏰ Expiry",
-    getExpiryText(donation.expiryTime),
-  ),
+          if (donation.status != 'completed' && donation.status != 'rejected')
+            _infoRow("⏰ Expiry", getExpiryText(donation.expiryTime)),
 
           _infoRow("📦 Status", donation.status),
 
@@ -903,32 +932,6 @@ class _DonationCardState extends State<_DonationCard> {
 
             if (donation.ngoPhone != null)
               _infoRow("📞 NGO Phone", donation.ngoPhone!),
-          ],
-          if (donation.status == 'completed' &&
-              !donation.donorReviewSubmitted) ...[
-            const SizedBox(height: 12),
-
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.amber,
-                  foregroundColor: Colors.black,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (_) => DonorReviewDialog(
-                      ngoId: donation.acceptedByNgoId!,
-                      donationId: donation.id,
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.star),
-                label: const Text("Rate NGO"),
-              ),
-            ),
           ],
         ],
       ),

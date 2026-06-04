@@ -9,7 +9,23 @@ class NgoReviewsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("NGO Reviews")),
+      appBar: AppBar(
+        title: FutureBuilder<DocumentSnapshot>(
+          future: FirebaseFirestore.instance
+              .collection('users')
+              .doc(ngoId)
+              .get(),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) {
+              return const Text("NGO Reviews");
+            }
+
+            final data = snapshot.data!.data() as Map<String, dynamic>? ?? {};
+
+            return Text("${data['name'] ?? 'NGO'} Reviews");
+          },
+        ),
+      ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('reviews')

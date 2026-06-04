@@ -9,7 +9,23 @@ class DonorReviewsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Donor Reviews")),
+      appBar: AppBar(
+        title: FutureBuilder<DocumentSnapshot>(
+          future: FirebaseFirestore.instance
+              .collection('users')
+              .doc(donorId)
+              .get(),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) {
+              return const Text("Donor Reviews");
+            }
+
+            final data = snapshot.data!.data() as Map<String, dynamic>? ?? {};
+
+            return Text("${data['name'] ?? 'Donor'} Reviews");
+          },
+        ),
+      ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('reviews')
